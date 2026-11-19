@@ -1,0 +1,182 @@
+@import "tailwindcss";
+
+/* ============================================================
+   boost.supply design system
+   Monochrome (black / white / grey) + a single restrained accent.
+   Radii live on an 8px grid. Soft, modern, clean.
+   ============================================================ */
+
+:root {
+  /* White page; soft grey blocks pop off it (Mobbin feature-grid style).
+     Color stays out of it — chrome leans on grey. */
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f3f3f1;
+  --surface-3: #e8e8e4;
+  --border: #ececea;
+  --border-strong: #dcdcd7;
+
+  --ink: #1b1b19;
+  --ink-2: #56564f;
+  --ink-3: #8a8a82;
+  --ink-4: #aeaea6;
+
+  /* Single accent, used sparingly */
+  --accent: #1b1b19;
+  --accent-soft: #f3f3f1;
+
+  /* Radii on an 8px grid */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-2xl: 32px;
+  --r-full: 999px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(19, 19, 19, 0.04), 0 1px 1px rgba(19, 19, 19, 0.03);
+  --shadow-md: 0 2px 8px rgba(19, 19, 19, 0.05), 0 1px 2px rgba(19, 19, 19, 0.04);
+  --shadow-lg: 0 12px 32px rgba(19, 19, 19, 0.08), 0 2px 8px rgba(19, 19, 19, 0.04);
+  /* Soft, diffuse lift for card hover — no hard edge */
+  --shadow-hover: 0 28px 50px -24px rgba(20, 20, 20, 0.18),
+    0 12px 24px -16px rgba(20, 20, 20, 0.1);
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-2xl: var(--r-2xl);
+
+  --font-sans: var(--font-saans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  letter-spacing: -0.011em;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+/* Thin, unobtrusive scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--r-full);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-4);
+  background-clip: content-box;
+}
+
+/* Utility: hairline focus ring */
+.ring-ink:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Range slider — monochrome, 8px-grid thumb */
+.bs-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: var(--r-full);
+  background: var(--surface-3);
+  cursor: pointer;
+}
+.bs-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--r-full);
+  background: var(--ink);
+  border: 3px solid var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s var(--ease);
+}
+.bs-range::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.bs-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--r-full);
+  background: var(--ink);
+  border: 3px solid var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* Marquee keyframes (used by ticker / logo slider previews) */
+@keyframes bs-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes bs-marquee-rev {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Subtle entrance */
+@keyframes bs-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.bs-fade-up {
+  animation: bs-fade-up 0.5s var(--ease) both;
+}
