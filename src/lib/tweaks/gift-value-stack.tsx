@@ -28,10 +28,10 @@ const defaults: TweakConfig = {
   text: "Start a subscription today and everything below arrives in your first box, on us.",
   currency: "$",
   gifts: [
-    { name: "Glass refill jar", value: "35" },
-    { name: "Steel shaker bottle", value: "38" },
-    { name: "Travel sachets, 7 pack", value: "25" },
-    { name: "Mini recovery balm", value: "25" },
+    { name: "Glass refill jar", value: "35", image: "/mockups/gift-jar.jpg" },
+    { name: "Steel shaker bottle", value: "38", image: "/mockups/gift-shaker.jpg" },
+    { name: "Gold measuring scoop", value: "25", image: "/mockups/gift-scoop.jpg" },
+    { name: "Zip travel pouch", value: "25", image: "/mockups/gift-pouch.jpg" },
   ],
   freeText: "Free",
   giftsSubOnly: true,
@@ -198,6 +198,7 @@ function Preview({ config }: { config: TweakConfig }) {
             >
               {gifts.map((g, i) => {
                 const v = toNum(g.value);
+                const photo = (g.image ?? "").trim();
                 return (
                   <div
                     key={i}
@@ -212,13 +213,24 @@ function Preview({ config }: { config: TweakConfig }) {
                     }}
                   >
                     <div
-                      className="grid aspect-square place-items-center overflow-hidden"
+                      className="relative grid aspect-square place-items-center overflow-hidden"
                       style={{ background: tile, borderRadius: Math.max(4, radius - 6) }}
                     >
-                      {/* the packshot scales with its tile */}
-                      <div className="grid h-[86%] w-[86%] place-items-center [&>div]:h-full! [&>div]:w-full! [&_svg]:h-[82%] [&_svg]:w-[82%]">
-                        <ProductArt kind={GIFT_ART[i % GIFT_ART.length]} tone={i % 2 ? badgeBg : art} size={112} tile="transparent" />
-                      </div>
+                      {photo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={photo}
+                          alt={g.name ?? ""}
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      ) : (
+                        /* no photo: a drawn packshot that scales with its tile */
+                        <div className="grid h-[86%] w-[86%] place-items-center [&>div]:h-full! [&>div]:w-full! [&_svg]:h-[82%] [&_svg]:w-[82%]">
+                          <ProductArt kind={GIFT_ART[i % GIFT_ART.length]} tone={i % 2 ? badgeBg : art} size={112} tile="transparent" />
+                        </div>
+                      )}
                     </div>
                     <p className="mt-2.5 px-0.5 text-[12.5px] font-semibold leading-tight">{g.name}</p>
                     <p className="mt-1 flex items-baseline gap-1.5 px-0.5 text-[11px] tabular-nums">
@@ -470,6 +482,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   - Subscribe & save uses the product's first selling plan from your
     subscriptions app. Without one, the subscription card is hidden and the
     gifts show as included with every order.
+  - Gift photos come from each Gift block's image picker.
 {%- endcomment -%}
 {%- liquid
   assign bs_v = product.selected_or_first_available_variant
@@ -778,12 +791,13 @@ export const giftValueStack: Tweak = {
     { key: "currency", label: "Currency symbol", type: "text", group: "Content" },
     {
       key: "gifts", label: "Gifts", type: "list", group: "Gifts",
-      hint: "Value is a number. In Shopify you can add a photo per gift",
+      hint: "Value is a number. Leave the image URL empty for a drawn placeholder. In Shopify you pick a photo per gift",
       itemFields: [
         { key: "name", label: "Name", type: "text" },
         { key: "value", label: "Value", type: "text" },
+        { key: "image", label: "Image URL", type: "text" },
       ],
-      newItem: { name: "Recipe booklet", value: "12" },
+      newItem: { name: "Extra measuring scoop", value: "15", image: "/mockups/gift-scoop.jpg" },
       addLabel: "Add gift",
       max: 6,
     },
@@ -819,6 +833,6 @@ export const giftValueStack: Tweak = {
     { key: "badge", label: "Badge", type: "color", group: "Colors" },
     { key: "badgeText", label: "Badge text", type: "color", group: "Colors" },
     { key: "tile", label: "Gift image background", type: "color", group: "Colors" },
-    { key: "art", label: "Preview product tone", type: "color", group: "Colors" },
+    { key: "art", label: "Fallback drawing tone", type: "color", group: "Colors", hint: "Only used for gifts without an image URL" },
   ],
 };

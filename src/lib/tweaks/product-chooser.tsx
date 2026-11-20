@@ -10,9 +10,10 @@ import { money, toNum } from "./product-art";
 /* ============================================================
    Use-Case Chooser
    Two or three big product cards side by side, each with a role
-   ("for cooking"), an intensity word with a meter, size, price,
-   a one-line usage rule and an add button. Tabs on top ("Cook
-   with it" / "Finish with it") lift the best match.
+   ("for cooking"), a product photo on a matching colour, an
+   intensity word with a meter, size, price, a one-line usage rule
+   and an add button. Tabs on top ("Cook with it" / "Finish with
+   it") lift the best match.
    ============================================================ */
 
 const SERIF = "Georgia, 'Times New Roman', serif";
@@ -29,15 +30,18 @@ const defaults: TweakConfig = {
   cards: [
     {
       tab: "Cook with it", role: "for cooking", name: "Everyday", intensity: "Mellow", level: "2",
-      size: "750 mL", price: "16", rule: "Sauté, roast, bake. Pour without thinking.", color: "#9eef80",
+      size: "750 mL", price: "16", rule: "Sauté, roast, bake. Pour without thinking.", color: "#c5d331",
+      image: "/mockups/oil-green.jpg",
     },
     {
       tab: "Finish with it", role: "for finishing", name: "Top Coat", intensity: "Punchy", level: "5",
-      size: "500 mL", price: "21", rule: "Raw only. Heat flattens the good stuff.", color: "#d1e030",
+      size: "500 mL", price: "21", rule: "Raw only. Heat flattens the good stuff.", color: "#f0cf80",
+      image: "/mockups/oil-yellow.jpg",
     },
     {
       tab: "Go high heat", role: "for high heat", name: "Heatwave", intensity: "Neutral", level: "1",
-      size: "750 mL", price: "14", rule: "Sear, fry and wok it hot, up to 450°F.", color: "#fbd535",
+      size: "750 mL", price: "14", rule: "Sear, fry and wok it hot, up to 450°F.", color: "#f6e3ca",
+      image: "/mockups/oil-cream.jpg",
     },
   ],
   selected: 2,
@@ -121,6 +125,7 @@ function Preview({ config }: { config: TweakConfig }) {
     price: toNum(c.price),
     rule: c.rule ?? "",
     color: c.color || accent,
+    image: (c.image ?? "").trim(),
   }));
 
   /* follow the "preselected" control, but let shoppers click around */
@@ -259,24 +264,42 @@ function Preview({ config }: { config: TweakConfig }) {
                   </span>
                 </div>
 
-                <div className="relative mt-1 grid h-[188px] place-items-center">
-                  <div
-                    className="h-[172px] transition-[rotate] duration-700"
-                    style={{ rotate: on ? "-4deg" : "0deg", transitionTimingFunction: POP }}
-                    dangerouslySetInnerHTML={{
-                      __html: bottleSvg({
-                        name: esc(c.name),
-                        size: esc(c.size),
-                        band: c.color,
-                        body: text,
-                        paper,
-                        fit: c.name.length > 8 ? FIT : "",
-                      }),
-                    }}
-                  />
+                <div className={c.image ? "relative mb-4 mt-3" : "relative mt-1 grid h-[188px] place-items-center"}>
+                  {c.image ? (
+                    /* photo on its own backdrop colour, which the card picks up */
+                    <div
+                      className="relative aspect-square overflow-hidden @min-[640px]:aspect-[4/5]"
+                      style={{ borderRadius: Math.max(6, radius - 14), background: c.color }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={c.image}
+                        alt={c.name}
+                        loading="lazy"
+                        decoding="async"
+                        className="absolute inset-0 h-full w-full object-cover object-[50%_40%] transition-[scale] duration-700"
+                        style={{ scale: on ? "1.05" : "1", transitionTimingFunction: EASE }}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="h-[172px] transition-[rotate] duration-700"
+                      style={{ rotate: on ? "-4deg" : "0deg", transitionTimingFunction: POP }}
+                      dangerouslySetInnerHTML={{
+                        __html: bottleSvg({
+                          name: esc(c.name),
+                          size: esc(c.size),
+                          band: c.color,
+                          body: text,
+                          paper,
+                          fit: c.name.length > 8 ? FIT : "",
+                        }),
+                      }}
+                    />
+                  )}
                   <span
                     aria-hidden={!on}
-                    className="absolute right-0 top-1 grid h-[68px] w-[68px] place-items-center rounded-full px-2 text-center text-[10.5px] font-bold uppercase leading-[1.1] tracking-[0.02em] transition-[scale,rotate,opacity] duration-500"
+                    className={`absolute grid h-[68px] w-[68px] place-items-center rounded-full px-2 text-center text-[10.5px] font-bold uppercase leading-[1.1] tracking-[0.02em] transition-[scale,rotate,opacity] duration-500 ${c.image ? "-right-2 -top-3" : "right-0 top-1"}`}
                     style={{
                       fontFamily: mono,
                       background: text,
@@ -391,6 +414,12 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; overflow: hidden
   ${S} .bs-art > a { display: grid; place-items: center; height: 172px; transition: rotate .7s cubic-bezier(.34,1.56,.64,1); }
   ${S} .bs-card.is-match .bs-art > a { rotate: -4deg; }
   ${S} .bs-art img { height: 172px; width: auto; max-width: 100%; object-fit: contain; display: block; }
+  ${S} .bs-art.is-photo { height: auto; display: block; margin: 12px 0 16px; }
+  ${S} .bs-art.is-photo > a { display: block; height: auto; aspect-ratio: 1; overflow: hidden; border-radius: {{ section.settings.radius | minus: 14 | at_least: 6 }}px; }
+  ${S} .bs-card.is-match .bs-art.is-photo > a { rotate: none; }
+  ${S} .bs-art.is-photo img { width: 100%; height: 100%; max-width: none; object-fit: cover; object-position: 50% 40%; transition: scale .7s cubic-bezier(.22,1,.36,1); }
+  ${S} .bs-card.is-match .bs-art.is-photo img { scale: 1.05; }
+  ${S} .bs-art.is-photo .bs-sticker { right: -8px; top: -12px; }
   ${S} .bs-sticker { position: absolute; right: 0; top: 4px; width: 68px; height: 68px; padding: 0 8px; border-radius: 99px; display: grid; place-items: center; text-align: center;
     font-size: 10.5px; text-transform: uppercase; line-height: 1.1; letter-spacing: .02em;
     background: {{ section.settings.text_color }}; color: {{ section.settings.accent }};
@@ -417,6 +446,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; overflow: hidden
     ${S} .bs-rail { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 16px; margin: 32px 0 0; padding: 12px 0 16px; overflow: visible; }
     ${S} .bs-card { padding: 20px; }
     ${S} .bs-name { font-size: 38px; }
+    ${S} .bs-art.is-photo > a { aspect-ratio: 4 / 5; }
   }
   @container (min-width: 760px) {
     ${S} .bs-head { flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 40px; }
@@ -439,6 +469,9 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; overflow: hidden
   Use-Case Chooser by boost.supply. Add it to your homepage (or any page).
   Each "Product card" block picks a real product and adds it to the cart.
   The tab label on each card becomes a tab on top; picking a tab lifts that card.
+  Card photos come from the block's "Card image" picker, or the product's
+  featured image when that is empty. Set the card colour to the photo's
+  backdrop colour so the photo blends into the card.
 {%- endcomment -%}
 {%- assign bs_sel = section.settings.selected | at_most: section.blocks.size -%}
 <div class="bs-pc-{{ section.id }}" id="bs-pc-{{ section.id }}">
@@ -468,15 +501,16 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; overflow: hidden
         {%- assign bs_p = block.settings.product -%}
         {%- assign bs_name = block.settings.name | default: bs_p.title -%}
         {%- assign bs_v = bs_p.selected_or_first_available_variant -%}
+        {%- assign bs_img = block.settings.image | default: bs_p.featured_image -%}
         <article class="bs-card{% if bs_sel > 0 %}{% if forloop.index == bs_sel %} is-match{% else %} is-dim{% endif %}{% endif %}" data-card style="background: {{ block.settings.color }};" {{ block.shopify_attributes }}>
           <div class="bs-top">
             <span class="bs-role bs-mono">{{ block.settings.role }}</span>
             <span class="bs-price">{%- if bs_p != blank -%}{{ bs_v.price | money_without_trailing_zeros }}{%- else -%}{{ block.settings.price }}{%- endif -%}</span>
           </div>
-          <div class="bs-art">
+          <div class="bs-art{% if bs_img %} is-photo{% endif %}">
             <a href="{%- if bs_p != blank -%}{{ bs_p.url }}{%- else -%}#{%- endif -%}" aria-label="{{ bs_name | escape }}">
-              {%- if bs_p.featured_image -%}
-                {{ bs_p.featured_image | image_url: width: 400 | image_tag: loading: 'lazy', alt: bs_name }}
+              {%- if bs_img -%}
+                {{ bs_img | image_url: width: 800 | image_tag: loading: 'lazy', alt: bs_name, sizes: '(min-width: 750px) 33vw, 80vw', widths: '400, 600, 800' }}
               {%- else -%}
                 ${bottle}
               {%- endif -%}
@@ -571,7 +605,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; overflow: hidden
       { type: "color", id: "bg", label: "Background", default: str(config, "bg") },
       { type: "color", id: "text_color", label: "Text & outlines", default: str(config, "textColor") },
       { type: "color", id: "accent", label: "Accent (active tab, sticker)", default: str(config, "accent") },
-      { type: "color", id: "paper", label: "Bottle label", default: str(config, "paper") },
+      { type: "color", id: "paper", label: "Bottle label (drawn bottle)", default: str(config, "paper") },
       { type: "range", id: "radius", label: "Card radius", min: 0, max: 40, step: 2, unit: "px", default: Math.max(0, Math.min(40, Math.round(num(config, "radius", 28) / 2) * 2)) },
     ],
     blocks: [
@@ -580,6 +614,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; overflow: hidden
         name: "Product card",
         settings: [
           { type: "product", id: "product", label: "Product" },
+          { type: "image_picker", id: "image", label: "Card image", info: "Optional. Uses the product's featured image when empty" },
           { type: "text", id: "tab_label", label: "Tab label", default: "Cook with it" },
           { type: "text", id: "role", label: "Role label", default: "for cooking" },
           { type: "text", id: "name", label: "Name (leave empty for product title)" },
@@ -618,7 +653,7 @@ export const productChooser: Tweak = {
   name: "Use-Case Chooser",
   tagline: "Big side-by-side product cards with tabs that lift the best match for the job.",
   description:
-    "Modeled on the oil chooser Graza uses on its homepage. Two or three bold product cards sit side by side, each with a role label, an intensity word and meter, size, price, a one-line rule for when to use it and its own add button. Tabs on top let shoppers say what they're making and lift the best match. Every card is a block with a real product, so it adds straight to the cart.",
+    "Modeled on the oil chooser Graza uses on its homepage. Two or three bold product cards sit side by side, each with a product photo that melts into a card of the same colour, a role label, an intensity word and meter, size, price, a one-line rule for when to use it and its own add button. Tabs on top let shoppers say what they're making and lift the best match. Every card is a block with a real product, so it adds straight to the cart.",
   category: "homepage",
   tier: "free",
   tint: "#f3f5df",
@@ -633,7 +668,7 @@ export const productChooser: Tweak = {
     { key: "currency", label: "Currency symbol", type: "text", group: "Content" },
     {
       key: "cards", label: "Cards", type: "list", group: "Cards",
-      hint: "Meter is 0 to 5. Colour is a hex value. Price is preview only; your store uses the product price",
+      hint: "Meter is 0 to 5. Colour is a hex value; match it to the photo's backdrop so the photo melts into the card. Image URL is a product photo (4:5 works best); leave it empty for the drawn bottle. Price and photo are preview only; your store uses the product price and image",
       itemFields: [
         { key: "tab", label: "Tab label", type: "text" },
         { key: "role", label: "Role", type: "text" },
@@ -644,10 +679,12 @@ export const productChooser: Tweak = {
         { key: "price", label: "Price", type: "text" },
         { key: "rule", label: "Usage rule", type: "text" },
         { key: "color", label: "Card colour", type: "text" },
+        { key: "image", label: "Image URL", type: "text" },
       ],
       newItem: {
         tab: "Bake with it", role: "for baking", name: "Golden", intensity: "Buttery", level: "3",
-        size: "500 mL", price: "18", rule: "Cakes, focaccia, anything with a crumb.", color: "#f6c8a8",
+        size: "500 mL", price: "18", rule: "Cakes, focaccia, anything with a crumb.", color: "#f6e3ca",
+        image: "/mockups/oil-cream.jpg",
       },
       addLabel: "Add card", max: 4,
     },

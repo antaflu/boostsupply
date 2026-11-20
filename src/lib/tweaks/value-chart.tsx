@@ -23,6 +23,8 @@ const defaults: TweakConfig = {
   eyebrow: "Cost per day",
   heading: "Your whole supplement shelf, in one daily scoop",
   subheading: "Here's what you'd pay per day to buy each of these on its own.",
+  image: "/mockups/value-greens.jpg",
+  replacedImage: "/mockups/value-supplements.jpg",
   productName: "Daily Greens",
   currency: "$",
   packPrice: "79",
@@ -159,6 +161,9 @@ function Preview({ config }: { config: TweakConfig }) {
   const inner = Math.max(6, radius - 10);
   const perDay = str(config, "perDay", "/day");
   const name = str(config, "productName");
+  const heroSrc = str(config, "image").trim();
+  const replSrc = str(config, "replacedImage").trim();
+  const photoBg = tint(sage, 0.45);
 
   const raw = list(config, "items");
   const items = raw.map((it, i) => ({
@@ -271,142 +276,208 @@ function Preview({ config }: { config: TweakConfig }) {
           )}
         </div>
 
-        {/* Chart */}
-        <div
-          ref={chartRef}
-          className="relative overflow-hidden p-5 @min-[640px]:col-start-2 @min-[640px]:row-span-3 @min-[640px]:row-start-1 @min-[640px]:self-start @min-[640px]:p-7"
-          style={{ background: accent, color: cream, borderRadius: radius }}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-            <p className="whitespace-nowrap text-[13px] font-medium" style={{ color: tint(cream, 0.72) }}>
-              {str(config, "chartLabel")}
-            </p>
-            {toggle}
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3 @min-[640px]:gap-5">
-            {/* Bought separately: stacked */}
-            <div className="flex min-w-0 flex-col">
-              <div className="relative flex h-[236px] items-end pt-[60px] @min-[640px]:h-[330px]">
-                <div
-                  className="relative w-full"
-                  style={{ height: `${(sep / max) * 100}%`, transition: `height 700ms ${EASE}` }}
-                >
-                  <p
-                    className="absolute bottom-full left-0 mb-2.5 whitespace-nowrap text-[28px] font-semibold leading-none tracking-[-0.04em] tabular-nums @min-[640px]:text-[34px]"
-                    style={{ ...rise(550), color: tint(cream, 0.78) }}
-                  >
-                    {money(tSep / 100, cur)}
-                    <span className="ml-0.5 text-[13px] font-medium tracking-normal opacity-70">{perDay}</span>
-                  </p>
-                  <div
-                    className="flex h-full flex-col gap-[2px] overflow-hidden"
-                    style={{
-                      borderRadius: inner,
-                      transform: inView ? "scaleY(1)" : "scaleY(0)",
-                      transformOrigin: "bottom",
-                      transition: `transform 1100ms ${EASE}`,
-                    }}
-                  >
-                    {items.map((it, i) => (
-                      <div
-                        key={i}
-                        onMouseEnter={() => setHot(i)}
-                        onMouseLeave={() => setHot(null)}
-                        className="min-h-[3px]"
-                        style={{
-                          flex: `${Math.max(it.cents, 1)} 1 0px`,
-                          background: it.color,
-                          opacity: hot === null || hot === i ? 1 : 0.32,
-                          transition: "opacity 250ms ease",
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <p className="mt-3 truncate text-[12.5px]" style={{ color: tint(cream, 0.7) }}>
-                {str(config, "separateLabel")}
-              </p>
-            </div>
-
-            {/* The product: one short, bright bar */}
-            <div className="flex min-w-0 flex-col">
-              <div className="relative flex h-[236px] items-end pt-[60px] @min-[640px]:h-[330px]">
-                <div
-                  className="relative w-full"
-                  style={{ height: `${(prod / max) * 100}%`, transition: `height 750ms ${EASE}` }}
-                >
-                  <p
-                    className="absolute bottom-full left-0 mb-2.5 whitespace-nowrap text-[34px] font-semibold leading-none tracking-[-0.045em] tabular-nums @min-[640px]:text-[42px]"
-                    style={rise(700)}
-                  >
-                    {money(tProd / 100, cur)}
-                    <span className="ml-0.5 text-[13px] font-medium tracking-normal opacity-70">{perDay}</span>
-                  </p>
-                  <div
-                    className="relative h-full"
-                    style={{
-                      background: cream,
-                      borderRadius: inner,
-                      boxShadow: `0 18px 40px -18px ${tint("#000000", 0.55)}`,
-                      transform: inView ? "scaleY(1)" : "scaleY(0)",
-                      transformOrigin: "bottom",
-                      transition: `transform 1100ms ${EASE} 160ms`,
-                    }}
-                  >
-                    {save > 0 && (
-                      <span
-                        key={save}
-                        className="bs-swap absolute left-2 top-2 rounded-full px-2.5 py-1 text-[11.5px] font-semibold tabular-nums"
-                        style={{ background: accent, color: cream }}
-                      >
-                        {str(config, "saveLabel")} {save}%
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <p className="mt-3 truncate text-[12.5px] font-semibold">{name}</p>
-            </div>
-          </div>
-
-          {str(config, "yearText") && (
-            <p
-              className="mt-5 border-t pt-4 text-[14px] leading-snug"
-              style={{ borderColor: tint(cream, 0.14), color: tint(cream, 0.8), ...rise(900) }}
+        {/* Product photo + chart */}
+        <div className="flex min-w-0 flex-col gap-3 @min-[640px]:col-start-2 @min-[640px]:row-span-3 @min-[640px]:row-start-1 @min-[640px]:self-start @min-[640px]:gap-4">
+          {heroSrc && (
+            <div
+              className="relative aspect-[4/3] overflow-hidden @min-[640px]:aspect-[5/4]"
+              style={{ background: photoBg, borderRadius: radius }}
             >
-              {yearParts[0]}
-              {yearParts.length > 1 && (
-                <b className="text-[20px] font-semibold tracking-[-0.02em] tabular-nums" style={{ color: cream }}>
-                  {money(Math.round(tYear), cur)}
-                </b>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={heroSrc}
+                alt={name}
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover"
+                style={{ objectPosition: "50% 62%" }}
+              />
+              {name && (
+                <p
+                  className="absolute bottom-3 left-3 flex max-w-[calc(100%-24px)] items-baseline gap-2 rounded-full px-3.5 py-1.5 text-[12.5px] shadow-[0_8px_24px_-12px_rgba(0,0,0,.45)] @min-[640px]:bottom-4 @min-[640px]:left-4"
+                  style={{ background: accent, color: cream }}
+                >
+                  <span className="truncate font-semibold">{name}</span>
+                  <span key={active} className="bs-swap shrink-0 tabular-nums" style={{ color: tint(cream, 0.75) }}>
+                    {money(prod / 100, cur)}
+                    {perDay}
+                  </span>
+                </p>
               )}
-              {yearParts.slice(1).join("")}
-            </p>
+            </div>
           )}
+
+          {/* Chart */}
+          <div
+            ref={chartRef}
+            className="relative overflow-hidden p-5 @min-[640px]:p-7"
+            style={{ background: accent, color: cream, borderRadius: radius }}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+              <p className="whitespace-nowrap text-[13px] font-medium" style={{ color: tint(cream, 0.72) }}>
+                {str(config, "chartLabel")}
+              </p>
+              {toggle}
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3 @min-[640px]:gap-5">
+              {/* Bought separately: stacked */}
+              <div className="flex min-w-0 flex-col">
+                <div className="relative flex h-[236px] items-end pt-[60px] @min-[640px]:h-[330px]">
+                  <div
+                    className="relative w-full"
+                    style={{ height: `${(sep / max) * 100}%`, transition: `height 700ms ${EASE}` }}
+                  >
+                    <p
+                      className="absolute bottom-full left-0 mb-2.5 whitespace-nowrap text-[28px] font-semibold leading-none tracking-[-0.04em] tabular-nums @min-[640px]:text-[34px]"
+                      style={{ ...rise(550), color: tint(cream, 0.78) }}
+                    >
+                      {money(tSep / 100, cur)}
+                      <span className="ml-0.5 text-[13px] font-medium tracking-normal opacity-70">{perDay}</span>
+                    </p>
+                    <div
+                      className="flex h-full flex-col gap-[2px] overflow-hidden"
+                      style={{
+                        borderRadius: inner,
+                        transform: inView ? "scaleY(1)" : "scaleY(0)",
+                        transformOrigin: "bottom",
+                        transition: `transform 1100ms ${EASE}`,
+                      }}
+                    >
+                      {items.map((it, i) => (
+                        <div
+                          key={i}
+                          onMouseEnter={() => setHot(i)}
+                          onMouseLeave={() => setHot(null)}
+                          className="min-h-[3px]"
+                          style={{
+                            flex: `${Math.max(it.cents, 1)} 1 0px`,
+                            background: it.color,
+                            opacity: hot === null || hot === i ? 1 : 0.32,
+                            transition: "opacity 250ms ease",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-3 truncate text-[12.5px]" style={{ color: tint(cream, 0.7) }}>
+                  {str(config, "separateLabel")}
+                </p>
+              </div>
+
+              {/* The product: one short, bright bar */}
+              <div className="flex min-w-0 flex-col">
+                <div className="relative flex h-[236px] items-end pt-[60px] @min-[640px]:h-[330px]">
+                  <div
+                    className="relative w-full"
+                    style={{ height: `${(prod / max) * 100}%`, transition: `height 750ms ${EASE}` }}
+                  >
+                    <p
+                      className="absolute bottom-full left-0 mb-2.5 whitespace-nowrap text-[34px] font-semibold leading-none tracking-[-0.045em] tabular-nums @min-[640px]:text-[42px]"
+                      style={rise(700)}
+                    >
+                      {money(tProd / 100, cur)}
+                      <span className="ml-0.5 text-[13px] font-medium tracking-normal opacity-70">{perDay}</span>
+                    </p>
+                    <div
+                      className="relative h-full"
+                      style={{
+                        background: cream,
+                        borderRadius: inner,
+                        boxShadow: `0 18px 40px -18px ${tint("#000000", 0.55)}`,
+                        transform: inView ? "scaleY(1)" : "scaleY(0)",
+                        transformOrigin: "bottom",
+                        transition: `transform 1100ms ${EASE} 160ms`,
+                      }}
+                    >
+                      {save > 0 && (
+                        <span
+                          key={save}
+                          className="bs-swap absolute left-2 top-2 rounded-full px-2.5 py-1 text-[11.5px] font-semibold tabular-nums"
+                          style={{ background: accent, color: cream }}
+                        >
+                          {str(config, "saveLabel")} {save}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-3 truncate text-[12.5px] font-semibold">{name}</p>
+              </div>
+            </div>
+
+            {str(config, "yearText") && (
+              <p
+                className="mt-5 border-t pt-4 text-[14px] leading-snug"
+                style={{ borderColor: tint(cream, 0.14), color: tint(cream, 0.8), ...rise(900) }}
+              >
+                {yearParts[0]}
+                {yearParts.length > 1 && (
+                  <b className="text-[20px] font-semibold tracking-[-0.02em] tabular-nums" style={{ color: cream }}>
+                    {money(Math.round(tYear), cur)}
+                  </b>
+                )}
+                {yearParts.slice(1).join("")}
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Itemised list */}
+        {/* Itemised list, with a photo of what it replaces beside it */}
         <div className="@min-[640px]:col-start-1 @min-[640px]:row-start-2">
-          <ul className="border-t" style={{ borderColor: line }}>
-            {items.map((it, i) => (
-              <li
-                key={i}
-                onMouseEnter={() => setHot(i)}
-                onMouseLeave={() => setHot(null)}
-                className="flex items-center gap-3 border-b py-2"
-                style={{
-                  borderColor: line,
-                  opacity: hot === null || hot === i ? 1 : 0.45,
-                  transition: "opacity 250ms ease",
-                }}
+          <div
+            className={
+              replSrc
+                ? "grid grid-cols-[minmax(0,0.5fr)_minmax(0,1fr)] items-start gap-4 @min-[640px]:gap-5"
+                : undefined
+            }
+          >
+            {replSrc && (
+              <div
+                className="relative aspect-[4/5] overflow-hidden"
+                style={{ background: photoBg, borderRadius: Math.max(8, inner) }}
               >
-                <ProductArt kind={ART[i % ART.length]} tone={it.color} size={34} tile={tint(sage, 0.5)} radius={9} />
-                <span className="min-w-0 flex-1 truncate text-[14px]">{it.name}</span>
-                <span className="text-[14px] tabular-nums">{money(it.cents / 100, cur)}</span>
-              </li>
-            ))}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={replSrc}
+                  alt={str(config, "separateLabel")}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              </div>
+            )}
+            <ul className="border-t" style={{ borderColor: line }}>
+              {items.map((it, i) => (
+                <li
+                  key={i}
+                  onMouseEnter={() => setHot(i)}
+                  onMouseLeave={() => setHot(null)}
+                  className={`flex items-center gap-3 border-b ${replSrc ? "py-2.5" : "py-2"}`}
+                  style={{
+                    borderColor: line,
+                    opacity: hot === null || hot === i ? 1 : 0.45,
+                    transition: "opacity 250ms ease",
+                  }}
+                >
+                  {replSrc ? (
+                    /* colour key: matches this item's slice of the stacked bar */
+                    <span
+                      aria-hidden
+                      className="h-2.5 w-2.5 shrink-0 rounded-[3px]"
+                      style={{ background: it.color, boxShadow: `inset 0 0 0 1px ${tint(text, 0.08)}` }}
+                    />
+                  ) : (
+                    <ProductArt kind={ART[i % ART.length]} tone={it.color} size={34} tile={tint(sage, 0.5)} radius={9} />
+                  )}
+                  <span className="min-w-0 flex-1 truncate text-[14px]">{it.name}</span>
+                  <span className="text-[14px] tabular-nums">{money(it.cents / 100, cur)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <ul>
             <li className="flex items-center gap-3 py-3 text-[14px]">
               <span className="min-w-0 flex-1 font-medium">{str(config, "totalLabel")}</span>
               <span className="tabular-nums line-through decoration-1" style={{ color: muted }}>
@@ -479,6 +550,15 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   ${S} .bs-eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 99px; background: currentColor; }
   ${S} .bs-h { margin-top: 12px; font-size: 29px; font-weight: 600; line-height: 1.04; letter-spacing: -.035em; text-wrap: balance; }
   ${S} .bs-sub { margin-top: 12px; max-width: 420px; font-size: 14.5px; line-height: 1.6; color: {{ section.settings.muted }}; }
+  ${S} .bs-side { display: grid; gap: 12px; min-width: 0; }
+  ${S} .bs-hero { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: ${r};
+    background: color-mix(in srgb, {{ section.settings.sage }} 45%, transparent); }
+  ${S} .bs-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; display: block; }
+  ${S} .bs-tag { position: absolute; left: 12px; bottom: 12px; max-width: calc(100% - 24px); display: flex; align-items: baseline; gap: 8px;
+    padding: 6px 14px; border-radius: 99px; font-size: 12.5px; box-shadow: 0 8px 24px -12px rgba(0,0,0,.45);
+    background: {{ section.settings.accent }}; color: {{ section.settings.accent_text }}; }
+  ${S} .bs-tag b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  ${S} .bs-tag > span { flex-shrink: 0; opacity: .75; font-variant-numeric: tabular-nums; }
   ${S} .bs-chart { position: relative; overflow: hidden; padding: 20px; border-radius: ${r};
     background: {{ section.settings.accent }}; color: {{ section.settings.accent_text }}; }
   ${S} .bs-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; }
@@ -522,6 +602,13 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   ${S}.is-armed.is-in .bs-num-sep { opacity: .78; }
   ${S}.is-armed.is-in .bs-num-prod { opacity: 1; }
   ${S}.is-armed.is-in .bs-year { opacity: .9; }
+  ${S} .bs-rep.has-img { display: grid; grid-template-columns: minmax(0, .5fr) minmax(0, 1fr); align-items: start; gap: 16px; }
+  ${S} .bs-rep-img { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border-radius: {{ section.settings.radius | minus: 10 | at_least: 8 }}px;
+    background: color-mix(in srgb, {{ section.settings.sage }} 45%, transparent); }
+  ${S} .bs-rep-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  ${S} .bs-rep.has-img .bs-row { padding: 10px 0; }
+  ${S} .bs-rep.has-img .bs-ic.is-dot { width: 10px; height: 10px; border-radius: 3px; background: none; }
+  ${S} .bs-rep.has-img .bs-ic.is-dot i { width: 10px; height: 10px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
   ${S} .bs-list { list-style: none; border-top: 1px solid rgba(0,0,0,.12); }
   ${S} .bs-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,.12); font-size: 14px; transition: opacity .25s; }
   ${S} .bs-ic { width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px; overflow: hidden; display: grid; place-items: center;
@@ -548,7 +635,11 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   @container (min-width: 640px) {
     ${S} .bs-wrap { grid-template-columns: minmax(0,1fr) minmax(0,1.08fr); grid-template-rows: auto auto 1fr; column-gap: 48px; row-gap: 32px; padding: 56px 40px; }
     ${S} .bs-head { grid-column: 1; grid-row: 1; }
-    ${S} .bs-chart { grid-column: 2; grid-row: 1 / span 3; align-self: start; padding: 28px; }
+    ${S} .bs-side { grid-column: 2; grid-row: 1 / span 3; align-self: start; gap: 16px; }
+    ${S} .bs-chart { padding: 28px; }
+    ${S} .bs-hero { aspect-ratio: 5 / 4; }
+    ${S} .bs-tag { left: 16px; bottom: 16px; }
+    ${S} .bs-rep.has-img { gap: 20px; }
     ${S} .bs-items { grid-column: 1; grid-row: 2; }
     ${S} .bs-cta { grid-column: 1; grid-row: 3; }
     ${S} .bs-h { font-size: 40px; }
@@ -571,6 +662,9 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   - Subscribe pricing is display only: set "Subscribe discount" to the same
     percentage your subscription app (selling plan) gives subscribers.
   - Each "Replaced item" block takes a price per day, e.g. 0.85.
+  - Photos come from your store: the product photo is the image you pick under
+    "Images" (or the product's featured image), and the photo beside the
+    replaced items is the optional image picker there. Leave them empty to hide.
 {%- endcomment -%}
 {%- liquid
   assign bs_p = section.settings.product
@@ -585,6 +679,10 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   assign bs_label = section.settings.product_label
   if bs_label == blank and bs_p != blank
     assign bs_label = bs_p.title
+  endif
+  assign bs_img = section.settings.image
+  if bs_img == blank and bs_p != blank
+    assign bs_img = bs_p.featured_image
   endif
   assign bs_one = bs_pack | times: 1.0 | divided_by: section.settings.servings | round
   assign bs_keep = 100 | minus: section.settings.sub_discount
@@ -624,79 +722,96 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
       {%- if section.settings.subheading != blank -%}<p class="bs-sub">{{ section.settings.subheading }}</p>{%- endif -%}
     </div>
 
-    <div class="bs-chart">
-      <div class="bs-top">
-        <p class="bs-cl">{{ section.settings.chart_label }}</p>
-        {%- if section.settings.show_toggle -%}
-          <div class="bs-tg" role="radiogroup" aria-label="Pricing">
-            <span class="bs-thumb" aria-hidden="true"></span>
-            <button type="button" role="radio" data-plan-btn="subscribe" aria-checked="{% if bs_plan == 'subscribe' %}true{% else %}false{% endif %}">
-              {{ section.settings.subscribe_label }}
-              {%- if section.settings.sub_discount > 0 -%}<span class="bs-off">−{{ section.settings.sub_discount }}%</span>{%- endif -%}
-            </button>
-            <button type="button" role="radio" data-plan-btn="onetime" aria-checked="{% if bs_plan == 'onetime' %}true{% else %}false{% endif %}">{{ section.settings.onetime_label }}</button>
+    <div class="bs-side">
+      {%- if section.settings.show_image and bs_img != blank -%}
+        <div class="bs-hero">
+          {{ bs_img | image_url: width: 1200 | image_tag: loading: 'lazy', alt: bs_label, sizes: '(min-width: 990px) 520px, 100vw' }}
+          {%- if bs_label != blank -%}
+            <p class="bs-tag"><b>{{ bs_label }}</b><span><span data-prod>{{ bs_prod | money }}</span>{{ section.settings.per_day }}</span></p>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+      <div class="bs-chart">
+        <div class="bs-top">
+          <p class="bs-cl">{{ section.settings.chart_label }}</p>
+          {%- if section.settings.show_toggle -%}
+            <div class="bs-tg" role="radiogroup" aria-label="Pricing">
+              <span class="bs-thumb" aria-hidden="true"></span>
+              <button type="button" role="radio" data-plan-btn="subscribe" aria-checked="{% if bs_plan == 'subscribe' %}true{% else %}false{% endif %}">
+                {{ section.settings.subscribe_label }}
+                {%- if section.settings.sub_discount > 0 -%}<span class="bs-off">−{{ section.settings.sub_discount }}%</span>{%- endif -%}
+              </button>
+              <button type="button" role="radio" data-plan-btn="onetime" aria-checked="{% if bs_plan == 'onetime' %}true{% else %}false{% endif %}">{{ section.settings.onetime_label }}</button>
+            </div>
+          {%- endif -%}
+        </div>
+
+        <div class="bs-cols">
+          <div class="bs-col">
+            <div class="bs-area">
+              <div class="bs-barw" data-sep-bar style="height: {{ bs_h_sep }}%;">
+                <p class="bs-num bs-num-sep">{{ bs_sep | money }}<small>{{ section.settings.per_day }}</small></p>
+                <div class="bs-stack" data-stack>
+                  {%- for block in section.blocks -%}
+                    {%- assign bs_c = block.settings.price | remove: '$' | remove: '€' | remove: '£' | replace: ',', '.' | strip | times: 100 | round | at_least: 1 -%}
+                    {%- assign bs_w = forloop.index0 | times: 42 | divided_by: bs_last | plus: 8 -%}
+                    {%- if section.blocks.size == 1 -%}{%- assign bs_w = 20 -%}{%- endif -%}
+                    <div class="bs-seg" data-i="{{ forloop.index0 }}" style="flex-grow: {{ bs_c }}; background: {{ section.settings.accent | color_mix: section.settings.sage, bs_w }};"></div>
+                  {%- endfor -%}
+                </div>
+              </div>
+            </div>
+            <p class="bs-cap">{{ section.settings.separate_label }}</p>
           </div>
+          <div class="bs-col">
+            <div class="bs-area">
+              <div class="bs-barw" data-prod-bar style="height: {{ bs_h_prod }}%;">
+                <p class="bs-num bs-num-prod"><span data-prod>{{ bs_prod | money }}</span><small>{{ section.settings.per_day }}</small></p>
+                <div class="bs-prod">
+                  <span class="bs-save" data-save{% if bs_save <= 0 %} hidden{% endif %}>{{ section.settings.save_label }} <span data-save-pct>{{ bs_save }}</span>%</span>
+                </div>
+              </div>
+            </div>
+            <p class="bs-cap bs-cap-prod">{{ bs_label }}</p>
+          </div>
+        </div>
+
+        {%- if section.settings.year_text != blank -%}
+          <p class="bs-year">
+            {{- bs_year_parts[0] -}}
+            {%- if section.settings.year_text contains bs_token -%}<b data-year>{{ bs_year | money_without_trailing_zeros }}</b>{%- endif -%}
+            {{- bs_year_parts[1] -}}
+          </p>
         {%- endif -%}
       </div>
-
-      <div class="bs-cols">
-        <div class="bs-col">
-          <div class="bs-area">
-            <div class="bs-barw" data-sep-bar style="height: {{ bs_h_sep }}%;">
-              <p class="bs-num bs-num-sep">{{ bs_sep | money }}<small>{{ section.settings.per_day }}</small></p>
-              <div class="bs-stack" data-stack>
-                {%- for block in section.blocks -%}
-                  {%- assign bs_c = block.settings.price | remove: '$' | remove: '€' | remove: '£' | replace: ',', '.' | strip | times: 100 | round | at_least: 1 -%}
-                  {%- assign bs_w = forloop.index0 | times: 42 | divided_by: bs_last | plus: 8 -%}
-                  {%- if section.blocks.size == 1 -%}{%- assign bs_w = 20 -%}{%- endif -%}
-                  <div class="bs-seg" data-i="{{ forloop.index0 }}" style="flex-grow: {{ bs_c }}; background: {{ section.settings.accent | color_mix: section.settings.sage, bs_w }};"></div>
-                {%- endfor -%}
-              </div>
-            </div>
-          </div>
-          <p class="bs-cap">{{ section.settings.separate_label }}</p>
-        </div>
-        <div class="bs-col">
-          <div class="bs-area">
-            <div class="bs-barw" data-prod-bar style="height: {{ bs_h_prod }}%;">
-              <p class="bs-num bs-num-prod"><span data-prod>{{ bs_prod | money }}</span><small>{{ section.settings.per_day }}</small></p>
-              <div class="bs-prod">
-                <span class="bs-save" data-save{% if bs_save <= 0 %} hidden{% endif %}>{{ section.settings.save_label }} <span data-save-pct>{{ bs_save }}</span>%</span>
-              </div>
-            </div>
-          </div>
-          <p class="bs-cap bs-cap-prod">{{ bs_label }}</p>
-        </div>
-      </div>
-
-      {%- if section.settings.year_text != blank -%}
-        <p class="bs-year">
-          {{- bs_year_parts[0] -}}
-          {%- if section.settings.year_text contains bs_token -%}<b data-year>{{ bs_year | money_without_trailing_zeros }}</b>{%- endif -%}
-          {{- bs_year_parts[1] -}}
-        </p>
-      {%- endif -%}
     </div>
 
     <div class="bs-items">
-      <ul class="bs-list" data-list>
-        {%- for block in section.blocks -%}
-          {%- assign bs_c = block.settings.price | remove: '$' | remove: '€' | remove: '£' | replace: ',', '.' | strip | times: 100 | round -%}
-          {%- assign bs_w = forloop.index0 | times: 42 | divided_by: bs_last | plus: 8 -%}
-          {%- if section.blocks.size == 1 -%}{%- assign bs_w = 20 -%}{%- endif -%}
-          <li class="bs-row" data-i="{{ forloop.index0 }}" {{ block.shopify_attributes }}>
-            <span class="bs-ic">
-              {%- if block.settings.image -%}
-                {{ block.settings.image | image_url: width: 96 | image_tag: loading: 'lazy', alt: block.settings.name }}
-              {%- else -%}
-                <i style="background: {{ section.settings.accent | color_mix: section.settings.sage, bs_w }};"></i>
-              {%- endif -%}
-            </span>
-            <span class="bs-nm">{{ block.settings.name }}</span>
-            <span class="bs-pr">{{ bs_c | money }}</span>
-          </li>
-        {%- endfor -%}
-      </ul>
+      <div class="bs-rep{% if section.settings.replaced_image != blank %} has-img{% endif %}">
+        {%- if section.settings.replaced_image != blank -%}
+          <div class="bs-rep-img">
+            {{ section.settings.replaced_image | image_url: width: 480 | image_tag: loading: 'lazy', alt: section.settings.separate_label, sizes: '(min-width: 990px) 160px, 33vw' }}
+          </div>
+        {%- endif -%}
+        <ul class="bs-list" data-list>
+          {%- for block in section.blocks -%}
+            {%- assign bs_c = block.settings.price | remove: '$' | remove: '€' | remove: '£' | replace: ',', '.' | strip | times: 100 | round -%}
+            {%- assign bs_w = forloop.index0 | times: 42 | divided_by: bs_last | plus: 8 -%}
+            {%- if section.blocks.size == 1 -%}{%- assign bs_w = 20 -%}{%- endif -%}
+            <li class="bs-row" data-i="{{ forloop.index0 }}" {{ block.shopify_attributes }}>
+              <span class="bs-ic{% unless block.settings.image %} is-dot{% endunless %}">
+                {%- if block.settings.image -%}
+                  {{ block.settings.image | image_url: width: 96 | image_tag: loading: 'lazy', alt: block.settings.name }}
+                {%- else -%}
+                  <i style="background: {{ section.settings.accent | color_mix: section.settings.sage, bs_w }};"></i>
+                {%- endif -%}
+              </span>
+              <span class="bs-nm">{{ block.settings.name }}</span>
+              <span class="bs-pr">{{ bs_c | money }}</span>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
       <div class="bs-total">
         <span class="bs-nm">{{ section.settings.total_label }}</span>
         <s>{{ bs_sep | money }}{{ section.settings.per_day }}</s>
@@ -813,6 +928,10 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
       { type: "text", id: "product_label", label: "Product name (empty = product title)", default: str(config, "productName") },
       { type: "text", id: "pack_price", label: "Pack price (used when no product is set)", default: str(config, "packPrice") },
       { type: "range", id: "servings", label: "Servings per pack", min: 5, max: 100, step: 1, default: Math.max(5, Math.min(100, Math.round(num(config, "servings", 30)))) },
+      { type: "header", content: "Images" },
+      { type: "checkbox", id: "show_image", label: "Show product photo", default: str(config, "image").trim() !== "" },
+      { type: "image_picker", id: "image", label: "Product photo", info: "Leave empty to use the product's featured image" },
+      { type: "image_picker", id: "replaced_image", label: "Photo beside the replaced items (optional)" },
       { type: "header", content: "Pricing toggle" },
       { type: "checkbox", id: "show_toggle", label: "Show subscribe / one-time toggle", default: bool(config, "showToggle", true) },
       {
@@ -887,6 +1006,14 @@ export const valueChart: Tweak = {
     { key: "eyebrow", label: "Eyebrow", type: "text", group: "Content" },
     { key: "heading", label: "Heading", type: "text", group: "Content" },
     { key: "subheading", label: "Subheading", type: "textarea", group: "Content" },
+    {
+      key: "image", label: "Image URL", type: "text", group: "Media", placeholder: "https://…",
+      hint: "Product photo above the chart. Empty hides it. In your store it uses the image you pick or the product's featured image",
+    },
+    {
+      key: "replacedImage", label: "Replaced items image URL", type: "text", group: "Media", placeholder: "https://…",
+      hint: "Photo beside the replaced items. Empty shows small icons instead",
+    },
     { key: "productName", label: "Product name", type: "text", group: "Your product" },
     { key: "packPrice", label: "Pack price", type: "text", group: "Your product", hint: "In your store this comes from the product you pick; this is the fallback" },
     { key: "servings", label: "Servings per pack", type: "slider", group: "Your product", min: 5, max: 100, step: 1 },

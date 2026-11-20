@@ -26,10 +26,10 @@ const defaults: TweakConfig = {
   currency: "$",
   sizes: "7, 8, 9, 10, 11, 12, 13",
   products: [
-    { name: "Daily Runner", colour: "Oat (Cream Sole)", price: "98", compare: "", tag: "New", tone: "#D8CBB3", soldOut: "13" },
-    { name: "Trail Lite", colour: "Moss (Natural Sole)", price: "125", compare: "", tag: "", tone: "#5D6A4D", soldOut: "7, 12" },
-    { name: "Lounge Slip-On", colour: "Charcoal (Light Grey Sole)", price: "66", compare: "95", tag: "Final sale", tone: "#4A4A47", soldOut: "8, 9" },
-    { name: "Breeze Knit", colour: "Deep Navy (Navy Sole)", price: "110", compare: "", tag: "New", tone: "#22305A", soldOut: "" },
+    { name: "Daily Runner", colour: "Oat (Cream Sole)", price: "98", compare: "", tag: "New", image: "/mockups/sneaker-sand.jpg", tone: "#D8CBB3", soldOut: "13" },
+    { name: "Trail Lite", colour: "Moss (Cream Sole)", price: "125", compare: "", tag: "", image: "/mockups/sneaker-olive.jpg", tone: "#5D6A4D", soldOut: "7, 12" },
+    { name: "Lounge Slip-On", colour: "Charcoal (Cream Sole)", price: "66", compare: "95", tag: "Final sale", image: "/mockups/sneaker-charcoal.jpg", tone: "#4A4A47", soldOut: "8, 9" },
+    { name: "Breeze Knit", colour: "Deep Navy (Cream Sole)", price: "110", compare: "", tag: "New", image: "/mockups/sneaker-navy.jpg", tone: "#22305A", soldOut: "" },
   ],
   quickAddText: "Quick add",
   sizeTitle: "Select size",
@@ -148,6 +148,7 @@ function Preview({ config }: { config: TweakConfig }) {
     price: toNum(p.price),
     compare: toNum(p.compare),
     tag: p.tag ?? "",
+    image: (p.image ?? "").trim(),
     tone: rgb(p.tone ?? "") ? (p.tone as string) : "#D8CBB3",
     sold: splitList(p.soldOut ?? ""),
   }));
@@ -241,15 +242,30 @@ function Preview({ config }: { config: TweakConfig }) {
                   style={{ background: tile, borderRadius: radius }}
                 >
                   {/* with the size panel up, the shoe glides into the space above it */}
-                  <div
-                    className="absolute inset-0 grid place-items-center"
-                    style={{
-                      transform: isOpen ? "translateY(-60px) scale(.64)" : "none",
-                      transition: `transform 600ms ${EASE}`,
-                    }}
-                  >
-                    <Sneaker tone={p.tone} />
-                  </div>
+                  {p.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="absolute inset-0 h-full w-full object-cover"
+                      style={{
+                        transform: isOpen ? "translateY(-60px)" : "none",
+                        transition: `transform 480ms ${EASE}`,
+                      }}
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-0 grid place-items-center"
+                      style={{
+                        transform: isOpen ? "translateY(-60px) scale(.64)" : "none",
+                        transition: `transform 600ms ${EASE}`,
+                      }}
+                    >
+                      <Sneaker tone={p.tone} />
+                    </div>
+                  )}
 
                   {p.tag && (
                     <span
@@ -397,10 +413,21 @@ function Preview({ config }: { config: TweakConfig }) {
           {tp && toast && (
             <div key={toast.id} className="bs-swap flex items-center gap-3 px-4 pt-3">
               <span
-                className="grid h-[52px] w-[52px] shrink-0 place-items-center overflow-hidden"
+                className="relative grid h-[52px] w-[52px] shrink-0 place-items-center overflow-hidden"
                 style={{ background: tile, borderRadius: Math.max(4, radius) }}
               >
-                <Sneaker tone={tp.tone} width="90%" />
+                {tp.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={tp.image}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : (
+                  <Sneaker tone={tp.tone} width="90%" />
+                )}
               </span>
               <div className="min-w-0 flex-1 leading-snug">
                 <p className="truncate text-[13.5px] font-medium">{tp.name}</p>
@@ -477,9 +504,9 @@ ${face ? face + "\n" : ""}  ${S} { background: {{ section.settings.bg }}; color:
   ${S} .bs-tile { position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: ${r}; background: {{ section.settings.tile }}; }
   ${S} .bs-img { position: absolute; inset: 0; display: block; }
   ${S} .bs-img img, ${S} .bs-img svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;
-    transition: opacity .5s ${ease}, transform .7s ${ease}; }
+    transition: opacity .5s ${ease}, transform .48s ${ease}; }
   ${S} .bs-img .bs-img2 { opacity: 0; }
-  ${S} .bs-card.is-open .bs-img img { transform: translateY(-26%) scale(.7); }
+  ${S} .bs-card.is-open .bs-img img { transform: translateY(-60px); }
   ${S} .bs-tag { position: absolute; left: 10px; top: 10px; z-index: 1; padding: 3px 6px; border-radius: 2px; background: #fff;
     font-size: 9.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: {{ section.settings.accent }}; }
   ${S} .bs-tag.is-sale { color: {{ section.settings.navy }}; }
@@ -563,6 +590,7 @@ ${face ? face + "\n" : ""}  ${S} { background: {{ section.settings.bg }}; color:
   const markup = `{%- comment -%}
   Quick-Add Product Grid by boost.supply. Works on any page.
   - Pick a collection; the grid shows its first products (see "Products to show").
+    Card photos are each product's featured image; its second image shows on hover.
   - Size chips come from the option named "Size" (or the first option if there
     is none). Sold-out sizes show crossed out. Products without options get a
     one-tap add.
@@ -880,17 +908,18 @@ export const quickAddGrid: Tweak = {
     { key: "currency", label: "Currency symbol", type: "text", group: "Content" },
     {
       key: "products", label: "Products", type: "list", group: "Products",
-      hint: "Preview only. In your store the grid shows the collection you pick. Tone is the shoe colour (hex); sold out = sizes, comma separated",
+      hint: "Preview only. In your store the grid shows the collection you pick, with each product's own photos. Tone (hex) colours the drawing shown when Image URL is empty; sold out = sizes, comma separated",
       itemFields: [
         { key: "name", label: "Name", type: "text" },
         { key: "colour", label: "Colour line", type: "text" },
         { key: "price", label: "Price", type: "text" },
         { key: "compare", label: "Compare-at", type: "text" },
         { key: "tag", label: "Label", type: "text" },
+        { key: "image", label: "Image URL", type: "text" },
         { key: "tone", label: "Tone (hex)", type: "text" },
         { key: "soldOut", label: "Sold-out sizes", type: "text" },
       ],
-      newItem: { name: "Canvas Court", colour: "Chalk (White Sole)", price: "90", compare: "", tag: "", tone: "#E9E4D8", soldOut: "" },
+      newItem: { name: "Canvas Court", colour: "Sand (Cream Sole)", price: "90", compare: "", tag: "", image: "/mockups/sneaker-sand.jpg", tone: "#D8CBB3", soldOut: "" },
       addLabel: "Add product", max: 8,
     },
     { key: "sizes", label: "Preview sizes", type: "text", group: "Products", hint: "Comma separated. Your store uses each product's real sizes" },

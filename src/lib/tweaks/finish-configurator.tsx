@@ -11,8 +11,8 @@ import { money, toNum } from "./product-art";
    Finish & Size Configurator
    A two-step ring configurator: large metallic finish swatches
    with a price per finish (promo finishes show was/now/save),
-   size chips with a "not sure? get a sizing kit" path, a drawn
-   ring that recolours with the finish, a total and a CTA.
+   size chips with a "not sure? get a sizing kit" path, a product
+   photo that crossfades to the chosen finish, a total and a CTA.
    ============================================================ */
 
 const SERIF = "Georgia, 'Times New Roman', serif";
@@ -26,11 +26,11 @@ const defaults: TweakConfig = {
   shownIn: "Shown in",
   finishLabel: "Finish",
   finishes: [
-    { name: "Silver", hex: "#c9cacb", price: "299", compare: "" },
-    { name: "Black", hex: "#3b3936", price: "299", compare: "" },
-    { name: "Brushed titanium", hex: "#9c978f", price: "349", compare: "" },
-    { name: "Gold", hex: "#d6b26b", price: "299", compare: "399" },
-    { name: "Rose", hex: "#d6a28c", price: "299", compare: "399" },
+    { name: "Silver", hex: "#c9cacb", price: "299", compare: "", image: "/mockups/ring-silver.jpg" },
+    { name: "Black", hex: "#3b3936", price: "299", compare: "", image: "" },
+    { name: "Brushed titanium", hex: "#9c978f", price: "349", compare: "", image: "" },
+    { name: "Gold", hex: "#d6b26b", price: "299", compare: "399", image: "/mockups/ring-gold.jpg" },
+    { name: "Rose", hex: "#d6a28c", price: "299", compare: "399", image: "" },
   ],
   selected: 4,
   sizeLabel: "Size",
@@ -153,6 +153,107 @@ function ringSvg(uid: string): string {
 </svg>`;
 }
 
+/* ---------- photos ----------
+   A finish can have its own photo. A finish without one borrows the
+   photo of the nearest finish that has one. On the stock silver photo
+   only the ring is recoloured (its outline is traced below), so black or
+   titanium still sit on the same bright stone; any other photo gets a
+   light hue and brightness grade toward the finish colour. */
+
+const STOCK_SILVER = "/mockups/ring-silver.jpg";
+
+/** Smooth closed path through points (Catmull-Rom as cubic Béziers). */
+const smooth = (pts: number[][]) => {
+  const n = pts.length;
+  let d = `M${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i + n - 1) % n];
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % n];
+    const p3 = pts[(i + 2) % n];
+    d += `C${f2(p1[0] + (p2[0] - p0[0]) / 6)} ${f2(p1[1] + (p2[1] - p0[1]) / 6)} ${f2(p2[0] - (p3[0] - p1[0]) / 6)} ${f2(p2[1] - (p3[1] - p1[1]) / 6)} ${p2[0]} ${p2[1]}`;
+  }
+  return d + "Z";
+};
+
+/* The ring in the stock silver photo, in % of the square photo:
+   the outer band, then the hole you see the stone through. */
+const SILVER_BAND = [
+  [31.6, 50], [32.2, 44], [33.3, 39], [35.1, 35.4], [38, 32.6], [43.5, 30.5], [50.9, 29.7], [56.4, 29.7],
+  [61.7, 30.7], [65.2, 32.6], [67.5, 35.8], [68.6, 40], [68.9, 48], [68.5, 57.3], [67.3, 63.6], [65.4, 67.5],
+  [62, 70.3], [56.6, 71.8], [50.8, 71.9], [45.9, 71], [41.2, 68.7], [36.6, 65], [33.5, 60.4], [32, 55.6],
+];
+const SILVER_HOLE = [
+  [42.9, 50], [43.5, 43], [45.4, 37.6], [48.5, 34.9], [52, 34.7], [54.8, 36.6], [56.3, 41],
+  [56.6, 50], [56, 58], [54.2, 63], [51, 65.3], [47.8, 64.9], [45.1, 61.5], [43.4, 56],
+];
+const SILVER_MASK = `url("data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><filter id="f"><feGaussianBlur stdDeviation=".3"/></filter><path filter="url(#f)" fill-rule="evenodd" d="${smooth(SILVER_BAND)}${smooth(SILVER_HOLE)}"/></svg>`,
+)}")`;
+const maskStyle: CSSProperties = {
+  WebkitMaskImage: SILVER_MASK,
+  maskImage: SILVER_MASK,
+  WebkitMaskSize: "100% 100%",
+  maskSize: "100% 100%",
+  WebkitMaskRepeat: "no-repeat",
+  maskRepeat: "no-repeat",
+};
+const LUMA = "0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0";
+
+const rgb01 = (hex: string) => parseHex(hex).map((v) => v / 255);
+const lum = (hex: string) => {
+  const [r, g, b] = rgb01(hex);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const hsl = (hex: string) => {
+  const [r, g, b] = rgb01(hex);
+  const mx = Math.max(r, g, b);
+  const mn = Math.min(r, g, b);
+  const d = mx - mn;
+  const l = (mx + mn) / 2;
+  const h = !d ? 0 : mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: h * 60, s: d ? d / (1 - Math.abs(2 * l - 1)) : 0 };
+};
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+/** Colour distance that weighs hue and chroma over lightness. */
+const dist = (a: string, b: string) => {
+  const [ar, ag, ab] = parseHex(a);
+  const [br, bg, bb] = parseHex(b);
+  return Math.hypot(ar - ag - (br - bg), (ar + ag) / 2 - ab - ((br + bg) / 2 - bb), (lum(a) - lum(b)) * 128);
+};
+
+/** Whole-photo CSS grade from the photo's finish colour toward another finish. */
+function grade(from: string, to: string): string {
+  const A = hsl(from);
+  const B = hsl(to);
+  const bright = clamp(Math.sqrt(lum(to) / Math.max(0.02, lum(from))), 0.6, 1.15);
+  const sat = A.s > 0.1 ? clamp(B.s / A.s, 0.55, 1.3) : 1;
+  const dh = ((B.h - A.h + 540) % 360) - 180;
+  const hue = A.s > 0.12 && B.s > 0.12 ? clamp(dh * 0.5, -18, 18) : 0;
+  return `brightness(${bright.toFixed(2)}) saturate(${sat.toFixed(2)}) hue-rotate(${hue.toFixed(0)}deg)`;
+}
+
+/** Per-channel tone curves that map the photo's luminance onto a finish
+    colour, lifting the highlights so the metal keeps its sheen. Light
+    targets are pulled toward the photo's own exposure so a pale finish
+    doesn't come out murky; dark ones stay dark. */
+function tintTables(from: string, to: string): string[] {
+  const ref = Math.max(0.05, lum(from));
+  return rgb01(to).map((c) => {
+    const r = c / ref;
+    const k = r ** (1 - 0.5 * Math.min(1, r) ** 2);
+    return Array.from({ length: 11 }, (_, i) => {
+      const x = i / 10;
+      const base = Math.min(1, k * x);
+      const h = Math.max(0, (x - 0.62) / 0.38);
+      return f2(Math.min(1, base + (0.92 - base) * h * h * 0.5));
+    }).join(" ");
+  });
+}
+
+type Shot = { src: string; filter?: string; tint?: string[] };
+
 /** Wrap *words* in an italic serif accent. */
 function Accent({ text, serif }: { text: string; serif: string }) {
   return (
@@ -195,7 +296,19 @@ function Preview({ config }: { config: TweakConfig }) {
     hex: f.hex || "#c9cacb",
     price: toNum(f.price),
     compare: toNum(f.compare),
+    image: (f.image ?? "").trim(),
   }));
+  /* every finish gets a photo as soon as one finish has one; with no
+     photos at all the drawn ring is used */
+  const photos = finishes.filter((f) => f.image);
+  const shots: (Shot | null)[] = finishes.map((f) => {
+    if (f.image) return { src: f.image };
+    if (!photos.length) return null;
+    const near = photos.reduce((a, b) => (dist(b.hex, f.hex) < dist(a.hex, f.hex) ? b : a));
+    return near.image === STOCK_SILVER
+      ? { src: near.image, tint: tintTables(near.hex, f.hex) }
+      : { src: near.image, filter: grade(near.hex, f.hex) };
+  });
   const sizes = parseSizes(str(config, "sizes"));
 
   /* follow the "preselected" control, but let shoppers click around */
@@ -209,12 +322,15 @@ function Preview({ config }: { config: TweakConfig }) {
   const [pickedSize, setPickedSize] = useState<string | null>(null);
   const [kit, setKit] = useState(false);
 
-  const fin = finishes[Math.max(0, Math.min(sel, finishes.length - 1))] ?? {
+  const fi = Math.max(0, Math.min(sel, finishes.length - 1));
+  const fin = finishes[fi] ?? {
     name: "",
     hex: "#c9cacb",
     price: 0,
     compare: 0,
+    image: "",
   };
+  const hasPhoto = photos.length > 0;
   const size =
     pickedSize !== null && sizes.includes(pickedSize)
       ? pickedSize
@@ -248,12 +364,69 @@ function Preview({ config }: { config: TweakConfig }) {
             borderRadius: radius + 4,
           }}
         >
-          <div className="grid aspect-[5/4] place-items-center @min-[640px]:aspect-[4/5]">
-            <div
-              className="aspect-square w-[74%] max-w-[330px] translate-x-[-3%]"
-              style={ringVars}
-              dangerouslySetInnerHTML={{ __html: ringSvg(uid) }}
-            />
+          <div className="relative grid aspect-[5/4] place-items-center @min-[640px]:aspect-[4/5]">
+            {hasPhoto ? (
+              <>
+                <svg width="0" height="0" aria-hidden className="absolute">
+                  {shots.map(
+                    (s, i) =>
+                      s?.tint && (
+                        <filter key={i} id={`${uid}-tint${i}`} colorInterpolationFilters="sRGB">
+                          <feColorMatrix type="matrix" values={LUMA} />
+                          <feComponentTransfer>
+                            <feFuncR type="table" tableValues={s.tint[0]} />
+                            <feFuncG type="table" tableValues={s.tint[1]} />
+                            <feFuncB type="table" tableValues={s.tint[2]} />
+                          </feComponentTransfer>
+                        </filter>
+                      ),
+                  )}
+                </svg>
+                {shots.map(
+                  (s, i) =>
+                    s && (
+                      <div
+                        key={i}
+                        aria-hidden={i !== fi}
+                        className="absolute inset-0 transition-opacity duration-700"
+                        style={{ opacity: i === fi ? 1 : 0, transitionTimingFunction: EASE }}
+                      >
+                        {/* a square that covers the stage like object-cover (sitting a
+                            little high on wide stages so the caption clears the ring),
+                            so the traced ring outline lines up at every aspect ratio */}
+                        <div className="absolute left-1/2 top-[42%] aspect-square w-full -translate-x-1/2 -translate-y-1/2 @min-[640px]:top-1/2 @min-[640px]:h-full @min-[640px]:w-auto">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={s.src}
+                            alt={i === fi ? fin.name : ""}
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute inset-0 h-full w-full object-cover"
+                            style={s.filter ? { filter: s.filter } : undefined}
+                          />
+                          {s.tint && (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              src={s.src}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                              className="absolute inset-0 h-full w-full object-cover"
+                              style={{ ...maskStyle, filter: `url(#${uid}-tint${i})` }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ),
+                )}
+              </>
+            ) : (
+              <div
+                className="aspect-square w-[74%] max-w-[330px] translate-x-[-3%]"
+                style={ringVars}
+                dangerouslySetInnerHTML={{ __html: ringSvg(uid) }}
+              />
+            )}
           </div>
           {promo && (
             <span
@@ -264,18 +437,31 @@ function Preview({ config }: { config: TweakConfig }) {
               {saveText} {money(save, cur)}
             </span>
           )}
-          <p
-            className="absolute inset-x-0 bottom-3.5 flex items-baseline justify-center gap-1.5 text-[12px]"
-            style={{ color: muted }}
-          >
-            {str(config, "shownIn")}
-            <em
-              key={fin.name}
-              className="bs-swap inline-block text-[16px] font-normal italic"
-              style={{ fontFamily: serif, color: text }}
+          <p className="absolute inset-x-0 bottom-3.5 flex justify-center px-3.5">
+            <span
+              className="flex max-w-full items-baseline gap-1.5 rounded-full text-[12px]"
+              style={
+                hasPhoto
+                  ? {
+                      color: muted,
+                      padding: "5px 14px 6px",
+                      background: tint(bg, 0.8),
+                      backdropFilter: "blur(12px) saturate(1.4)",
+                      WebkitBackdropFilter: "blur(12px) saturate(1.4)",
+                      boxShadow: "0 1px 2px rgba(0,0,0,.08)",
+                    }
+                  : { color: muted }
+              }
             >
-              {fin.name}
-            </em>
+              {str(config, "shownIn")}
+              <em
+                key={fin.name}
+                className="bs-swap inline-block truncate text-[16px] font-normal italic"
+                style={{ fontFamily: serif, color: text }}
+              >
+                {fin.name}
+              </em>
+            </span>
           </p>
         </div>
 
@@ -554,13 +740,16 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
     background: radial-gradient(120% 85% at 50% 32%, color-mix(in srgb, {{ section.settings.panel }} 40%, #fff) 0%, {{ section.settings.panel }} 64%); }
   ${S} .bs-stage { aspect-ratio: 5 / 4; display: grid; place-items: center; }
   ${S} .bs-ring { width: 74%; max-width: 330px; aspect-ratio: 1; transform: translateX(-3%); }
-  ${S} .bs-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  ${S} .bs-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity .45s cubic-bezier(.22,1,.36,1); }
   ${S} .bs-badge { position: absolute; left: 14px; top: 14px; padding: 5px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 500;
     background: {{ section.settings.text_color }}; color: {{ section.settings.bg }}; }
   ${S} .bs-badge[hidden] { display: none; }
   ${S} .bs-shown { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; align-items: baseline; justify-content: center; gap: 6px;
     font-size: 12px; color: {{ section.settings.muted }}; }
   ${S} .bs-shown em { font-size: 16px; color: {{ section.settings.text_color }}; }
+  ${S} .is-photo .bs-shown { left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100% - 28px); padding: 5px 14px 6px; border-radius: 99px;
+    background: color-mix(in srgb, {{ section.settings.bg }} 80%, transparent); -webkit-backdrop-filter: blur(12px) saturate(1.4); backdrop-filter: blur(12px) saturate(1.4);
+    box-shadow: 0 1px 2px rgba(0,0,0,.08); }
   ${S} .bs-eyebrow { font-size: 12.5px; color: {{ section.settings.muted }}; }
   ${S} .bs-h { margin-top: 4px; font-family: inherit; font-size: 27px; font-weight: 400; line-height: 1.08; letter-spacing: -.025em; text-transform: none; color: inherit; }
   ${S} .bs-sub { margin-top: 10px; font-size: 13.5px; line-height: 1.6; color: {{ section.settings.muted }}; }
@@ -645,6 +834,9 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   - Add one "Finish swatch" block per finish to give it a swatch colour. The block
     value must match the option value (for example "Brushed titanium").
   - Promo pricing per finish comes from each variant's compare-at price.
+  - Product visual: the photo comes from your variant images. Give each finish
+    variant its own image and the photo changes with the finish. Without
+    product images (or with "Drawn ring" picked) a drawn ring recolours instead.
   - Sizing kit: paste the link to your sizing-kit product or page.
 {%- endcomment -%}
 {%- if product != blank -%}
@@ -671,11 +863,13 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   {%- if bs_bh == bs_cur_h -%}{%- assign bs_cur_col = block.settings.color -%}{%- endif -%}
 {%- endfor -%}
 {%- assign bs_kit_url = section.settings.kit_url | default: routes.all_products_collection_url -%}
+{%- assign bs_photo = false -%}
+{%- if section.settings.visual == 'image' and product.featured_media != blank -%}{%- assign bs_photo = true -%}{%- endif -%}
 <div class="bs-fc-{{ section.id }}" id="bs-fc-{{ section.id }}" data-fi="{{ bs_fi }}" data-si="{{ bs_si }}">
   <div class="bs-wrap">
-    <div class="bs-vis">
+    <div class="bs-vis{% if bs_photo %} is-photo{% endif %}">
       <div class="bs-stage">
-        {%- if section.settings.visual == 'image' and product.featured_media != blank -%}
+        {%- if bs_photo -%}
           {%- assign bs_media = bs_v.featured_media | default: product.featured_media -%}
           {{ bs_media | image_url: width: 1200 | image_tag: class: 'bs-img', alt: product.title, loading: 'eager' }}
         {%- else -%}
@@ -861,8 +1055,14 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
       var img = $('.bs-img');
       if (img && match.featured_image && match.featured_image.src) {
         var src = match.featured_image.src;
-        img.removeAttribute('srcset');
-        img.src = src + (src.indexOf('?') > -1 ? '&' : '?') + 'width=1200';
+        var next = src + (src.indexOf('?') > -1 ? '&' : '?') + 'width=1200';
+        if (img.getAttribute('src') !== next) {
+          /* soft crossfade: dip, swap, fade back in once the new photo loads */
+          img.style.opacity = '.35';
+          img.onload = function () { img.style.opacity = ''; };
+          img.removeAttribute('srcset');
+          img.src = next;
+        }
       }
       if (window.history && window.URL) {
         var u = new URL(window.location.href);
@@ -892,10 +1092,10 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
         id: "visual",
         label: "Product visual",
         options: [
-          { value: "ring", label: "Drawn ring (recolours with the finish)" },
           { value: "image", label: "Variant images" },
+          { value: "ring", label: "Drawn ring (recolours with the finish)" },
         ],
-        default: "ring",
+        default: "image",
       },
       txt("text", "shown_in", "Visual caption", str(config, "shownIn")),
       { type: "header", content: "Product options" },
@@ -952,9 +1152,9 @@ export const finishConfigurator: Tweak = {
   slug: "finish-configurator",
   inspiredBy: "oura",
   name: "Finish & Size Configurator",
-  tagline: "Metallic finish swatches, size chips and a sizing-kit path, with a ring that recolours live.",
+  tagline: "Metallic finish swatches, size chips and a sizing-kit path, with a product photo that follows the finish.",
   description:
-    "Modeled on the ring configurator Oura uses on its product pages. Step one is a row of large metallic finish swatches, each with its own price and promo finishes showing was, now and the saving. Step two is size chips with a note on sizing and a free sizing-kit path for shoppers who aren't sure. A drawn product visual recolours with the finish, and the total and add-to-cart button update as you go. In Shopify it maps to your product's Finish and Size options and picks the matching variant.",
+    "Modeled on the ring configurator Oura uses on its product pages. Step one is a row of large metallic finish swatches, each with its own price and promo finishes showing was, now and the saving. Step two is size chips with a note on sizing and a free sizing-kit path for shoppers who aren't sure. The product photo crossfades to the chosen finish, and the total and add-to-cart button update as you go. In Shopify it maps to your product's Finish and Size options, picks the matching variant and shows that variant's image.",
   category: "product-page",
   tier: "paid",
   price: 49,
@@ -971,14 +1171,15 @@ export const finishConfigurator: Tweak = {
     { key: "finishLabel", label: "Step label", type: "text", group: "Finishes" },
     {
       key: "finishes", label: "Finishes", type: "list", group: "Finishes",
-      hint: "Swatch is a hex colour. Add a compare-at price to show the saving. Prices are preview only; your store uses the variant prices",
+      hint: "Swatch is a hex colour. Add a compare-at price to show the saving. Image URL is optional: a finish without one borrows the nearest photo, tinted to its swatch. Prices and photos are preview only; your store uses the variant prices and images",
       itemFields: [
         { key: "name", label: "Name", type: "text" },
         { key: "hex", label: "Swatch hex", type: "text" },
         { key: "price", label: "Price", type: "text" },
         { key: "compare", label: "Compare-at", type: "text" },
+        { key: "image", label: "Image URL", type: "text" },
       ],
-      newItem: { name: "Graphite", hex: "#5a5c60", price: "299", compare: "" }, addLabel: "Add finish", max: 8,
+      newItem: { name: "Graphite", hex: "#5a5c60", price: "299", compare: "", image: "" }, addLabel: "Add finish", max: 8,
     },
     { key: "selected", label: "Preselected finish", type: "slider", group: "Finishes", min: 1, max: 8, step: 1, hint: "Preview only; your store preselects the current variant" },
     { key: "sizeLabel", label: "Step label", type: "text", group: "Sizes" },

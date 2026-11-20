@@ -607,7 +607,7 @@ button:not(:disabled),
   }
 }
 
-/* ---- Login wall ---- */
+/* ---- Login wall (stepper card + liquid ticker) ---- */
 @keyframes bs-twinkle {
   0%,
   100% {

@@ -24,10 +24,10 @@ const defaults: TweakConfig = {
   subheading: "One fabric, four silhouettes. Compare lift, neckline and coverage side by side.",
   currency: "$",
   products: [
-    { collection: "Second Skin", name: "Everyday t-shirt bra", price: "52", compare: "", v1: "2", v2: "Scoop", v3: "4" },
-    { collection: "Second Skin", name: "Contour plunge bra", price: "56", compare: "", v1: "3", v2: "Plunge", v3: "3" },
-    { collection: "Second Skin", name: "Sculpt push-up bra", price: "54", compare: "62", v1: "5", v2: "Deep plunge", v3: "3" },
-    { collection: "Soft Form", name: "Wireless demi bra", price: "46", compare: "", v1: "2", v2: "Demi", v3: "2" },
+    { collection: "Second Skin", name: "Everyday wireless bra", price: "52", compare: "", v1: "2", v2: "V-neck", v3: "4", image: "/mockups/ladder-bra-nude.jpg" },
+    { collection: "Second Skin", name: "Scoop tank bralette", price: "48", compare: "", v1: "1", v2: "Scoop", v3: "5", image: "/mockups/ladder-bra-cocoa.jpg" },
+    { collection: "Second Skin", name: "Sculpt push-up bra", price: "54", compare: "62", v1: "5", v2: "Deep plunge", v3: "3", image: "/mockups/ladder-bra-black.jpg" },
+    { collection: "Soft Form", name: "Strapless bandeau bra", price: "46", compare: "", v1: "3", v2: "Straight", v3: "2", image: "/mockups/ladder-bra-white.jpg" },
   ],
   current: 1,
   attr1: "Lift",
@@ -263,6 +263,7 @@ function Preview({ config }: { config: TweakConfig }) {
             const cmp = toNum(p.compare);
             const sale = cmp > price;
             const tone = tones[i % tones.length];
+            const photo = (p.image ?? "").trim();
             return (
               <div
                 key={i}
@@ -282,10 +283,19 @@ function Preview({ config }: { config: TweakConfig }) {
                     style={{ background: tile, borderRadius: radius }}
                   >
                     <span
-                      className={`grid h-full w-full place-items-center transition-[scale] duration-700 ${on ? "" : "group-hover:scale-[1.04]"}`}
+                      className={`absolute inset-0 grid place-items-center transition-[scale] duration-700 ${on ? "" : "group-hover:scale-[1.04]"}`}
                       style={{ transitionTimingFunction: EASE }}
                     >
-                      {art === "bra" ? (
+                      {photo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={photo}
+                          alt={p.name ?? ""}
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      ) : art === "bra" ? (
                         <BraArt tone={tone} variant={i} />
                       ) : (
                         <ProductArt kind={art as ArtKind} tone={tone === bg ? accent : tone} size={150} tile="transparent" />
@@ -478,6 +488,8 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
      A value of 1 to 5 shows as a level meter, anything else as text.
   No products picked? The Card blocks show on their own, with their own
   title, price, link and image.
+  Images come from each product's featured image, or from the Card block's
+  image picker when no products are picked.
 {%- endcomment -%}
 {%- liquid
   assign bs_use_products = false
@@ -726,7 +738,7 @@ export const productLadder: Tweak = {
     { key: "currency", label: "Currency symbol", type: "text", group: "Content" },
     {
       key: "products", label: "Products", type: "list", group: "Products",
-      hint: "Preview only: in Shopify you pick the real products. Highlight values 1–5 show as a meter, anything else as text",
+      hint: "Preview only: in Shopify you pick the real products and their photos. Highlight values 1–5 show as a meter, anything else as text. Leave the image URL empty for a drawn placeholder",
       itemFields: [
         { key: "collection", label: "Collection line", type: "text" },
         { key: "name", label: "Style name", type: "text" },
@@ -735,8 +747,9 @@ export const productLadder: Tweak = {
         { key: "v1", label: "Highlight 1", type: "text" },
         { key: "v2", label: "Highlight 2", type: "text" },
         { key: "v3", label: "Highlight 3", type: "text" },
+        { key: "image", label: "Image URL", type: "text" },
       ],
-      newItem: { collection: "Soft Form", name: "Lounge bralette", price: "38", compare: "", v1: "1", v2: "V-neck", v3: "3" },
+      newItem: { collection: "Soft Form", name: "Lounge bralette", price: "38", compare: "", v1: "1", v2: "V-neck", v3: "3", image: "/mockups/ladder-bra-nude.jpg" },
       addLabel: "Add style",
       max: 6,
     },
@@ -756,8 +769,8 @@ export const productLadder: Tweak = {
     },
     fontField("Typography"),
     {
-      key: "art", label: "Preview image", type: "select", group: "Layout",
-      hint: "Placeholder art for the preview. Your store shows the product photos",
+      key: "art", label: "Fallback drawing", type: "select", group: "Layout",
+      hint: "Drawn placeholder for styles without an image URL. Your store shows the product photos",
       options: [
         { label: "Bra silhouette", value: "bra" },
         { label: "Bottle", value: "bottle" },

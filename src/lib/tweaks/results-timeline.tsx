@@ -21,6 +21,7 @@ const defaults: TweakConfig = {
   eyebrow: "Your first 90 days",
   heading: "What to expect, week by week",
   subheading: "Real change takes consistency. Here's how most people feel as the daily habit builds.",
+  image: "/mockups/timeline-capsules.jpg",
   milestones: [
     {
       label: "7 days",
@@ -118,6 +119,20 @@ function Node({
   );
 }
 
+/** Full-bleed photo; the parent sets the shape (aspect ratio + radius). */
+function Photo({ src }: { src: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  );
+}
+
 function Preview({ config }: { config: TweakConfig }) {
   const accent = str(config, "accent", "#1F3B2D");
   const soft = str(config, "soft", "#DCE6C9");
@@ -143,6 +158,7 @@ function Preview({ config }: { config: TweakConfig }) {
   const heading = str(config, "heading");
   const sub = str(config, "subheading");
   const footnote = bool(config, "showFootnote", true) ? str(config, "footnote") : "";
+  const image = str(config, "image").trim();
 
   return (
     <div
@@ -167,7 +183,17 @@ function Preview({ config }: { config: TweakConfig }) {
           </p>
         )}
 
-        {/* Wide: horizontal stepper + detail card */}
+        {/* Narrow: photo above the vertical timeline */}
+        {image && (
+          <div
+            className="relative mt-7 aspect-square overflow-hidden @min-[640px]:hidden"
+            style={{ background: soft, borderRadius: radius }}
+          >
+            <Photo src={image} />
+          </div>
+        )}
+
+        {/* Wide: horizontal stepper + detail card (photo on the right) */}
         {n > 0 && (
           <div className="mt-11 hidden @min-[640px]:block">
             <div className="relative grid gap-x-3" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
@@ -201,7 +227,7 @@ function Preview({ config }: { config: TweakConfig }) {
               ))}
             </div>
 
-            {m && (
+            {m && !image && (
               <div
                 key={active}
                 className="bs-fade-up mt-8 grid items-center gap-8 p-8"
@@ -232,6 +258,43 @@ function Preview({ config }: { config: TweakConfig }) {
                     </p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* With a photo: copy + stat on the left, the photo full-bleed on the right */}
+            {m && image && (
+              <div
+                className="mt-8 grid grid-cols-[minmax(0,1fr)_minmax(0,0.64fr)] overflow-hidden"
+                style={{ background: soft, color: accent, borderRadius: radius }}
+              >
+                <div key={active} className="bs-fade-up flex flex-col justify-center p-8">
+                  <span
+                    className="self-start rounded-full px-2.5 py-1 text-[11.5px] leading-none"
+                    style={{ background: accent, color: soft }}
+                  >
+                    {m.label}
+                  </span>
+                  <p className="mt-4 text-[24px] leading-[1.2] tracking-[-0.015em]">{m.title}</p>
+                  <p className="mt-2 max-w-[440px] text-[14.5px] leading-relaxed" style={{ opacity: 0.8 }}>
+                    {m.text}
+                  </p>
+                  {m.stat && (
+                    <div
+                      className="mt-6 flex items-end gap-4 border-t pt-5"
+                      style={{ borderColor: tint(accent, 0.15) }}
+                    >
+                      <p className="shrink-0 text-[52px] font-light leading-[0.85] tracking-[-0.03em]">{m.stat}</p>
+                      <p className="max-w-[180px] text-[12.5px] leading-snug" style={{ opacity: 0.8 }}>
+                        {m.statLabel}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="relative">
+                  {/* sets the photo's minimum shape (4:5, square when wide); it grows with longer copy */}
+                  <div aria-hidden className="aspect-[4/5] @min-[960px]:aspect-square" />
+                  <Photo src={image} />
+                </div>
               </div>
             )}
           </div>
@@ -328,6 +391,8 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   ${S} .bs-eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 99px; background: currentColor; }
   ${S} .bs-h { margin-top: 12px; max-width: 560px; font-size: 27px; font-weight: 400; line-height: 1.12; letter-spacing: -.02em; }
   ${S} .bs-sh { margin-top: 12px; max-width: 520px; font-size: 14px; line-height: 1.6; opacity: .68; }
+  ${S} .bs-media { position: relative; margin-top: 28px; aspect-ratio: 1; overflow: hidden; background: {{ section.settings.soft }}; border-radius: {{ section.settings.radius }}px; }
+  ${S} .bs-media img, ${S} .bs-cimg img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
   ${S} .bs-steps { position: relative; margin-top: 32px; padding: 0; list-style: none; }
   ${S} .bs-track { display: none; }
   ${S} .bs-step { position: relative; padding-bottom: 22px; }
@@ -355,6 +420,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   ${S} .is-active .bs-detail { grid-template-rows: 1fr; }
   ${S} .bs-detail > div { min-height: 0; overflow: hidden; }
   ${S} .bs-card { margin-top: 14px; padding: 18px; background: {{ section.settings.soft }}; color: ${a}; border-radius: {{ section.settings.radius | minus: 4 | at_least: 8 }}px; }
+  ${S} .bs-cimg { display: none; }
   ${S} .bs-pill { display: none; padding: 5px 10px; border-radius: 99px; background: ${a}; color: {{ section.settings.soft }}; font-size: 11.5px; line-height: 1; }
   ${S} .bs-ct { font-size: 18px; line-height: 1.25; letter-spacing: -.015em; }
   ${S} .bs-cx { margin-top: 6px; font-size: 13.5px; line-height: 1.6; opacity: .8; }
@@ -377,14 +443,26 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
     ${S} .is-active .bs-ben { opacity: .85; }
     ${S} .bs-detail { display: none; grid-row: 2; grid-column: 1 / -1; padding: 0; margin-top: 32px; }
     ${S} .is-active .bs-detail { display: block; animation: bs-rt-in .42s cubic-bezier(.22,1,.36,1) both; }
+    ${S} .bs-media { display: none; }
     ${S} .bs-card { margin: 0; padding: 32px; border-radius: {{ section.settings.radius }}px; }
-    ${S} .bs-card.has-stat { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px; align-items: center; }
+    ${S} .bs-card.has-stat .bs-cb { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px; align-items: center; }
     ${S} .bs-pill { display: inline-block; }
     ${S} .bs-ct { margin-top: 16px; font-size: 24px; line-height: 1.2; }
     ${S} .bs-cx { margin-top: 8px; max-width: 480px; font-size: 14.5px; }
     ${S} .bs-stat { display: block; max-width: 200px; margin: 0; padding: 0 0 0 32px; border-top: 0; border-left: 1px solid ${mix(15)}; }
     ${S} .bs-sv { font-size: 56px; }
     ${S} .bs-sl { margin-top: 8px; }
+    ${S} .bs-card.has-img { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .64fr); padding: 0; overflow: hidden; }
+    ${S} .has-img .bs-cb, ${S} .has-img.has-stat .bs-cb { display: flex; flex-direction: column; justify-content: center; align-items: stretch; gap: 0; padding: 32px; }
+    ${S} .has-img .bs-cx { max-width: 440px; }
+    ${S} .has-img .bs-stat { display: flex; align-items: flex-end; gap: 16px; max-width: none; margin-top: 24px; padding: 20px 0 0; border-left: 0; border-top: 1px solid ${mix(15)}; }
+    ${S} .has-img .bs-sv { flex-shrink: 0; font-size: 52px; line-height: .85; }
+    ${S} .has-img .bs-sl { max-width: 180px; margin-top: 0; }
+    ${S} .bs-cimg { display: block; position: relative; }
+    ${S} .bs-cimg::before { content: ""; display: block; aspect-ratio: 4 / 5; }
+  }
+  @container (min-width: 960px) {
+    ${S} .bs-cimg::before { aspect-ratio: 1; }
   }
   @media (prefers-reduced-motion: reduce) {
     ${S} *, ${S} *::before, ${S} *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; }
@@ -395,8 +473,11 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   Results Timeline by boost.supply. Add it to your product template (or any
   page). Each "Milestone" block is one step; the stat is optional. Keep any
   claims and the footnote accurate for your own product.
+  The photo comes from the section's image picker: it sits beside the
+  milestone details on desktop and above the timeline on mobile.
 {%- endcomment -%}
 {%- liquid
+  assign bs_img = section.settings.image
   assign bs_n = section.blocks.size
   assign bs_sel = section.settings.selected
   if bs_sel > bs_n
@@ -417,6 +498,10 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
     {%- if section.settings.heading != blank -%}<h2 class="bs-h">{{ section.settings.heading }}</h2>{%- endif -%}
     {%- if section.settings.subheading != blank -%}<p class="bs-sh">{{ section.settings.subheading }}</p>{%- endif -%}
 
+    {%- if bs_img != blank -%}
+      <div class="bs-media">{{ bs_img | image_url: width: 900 | image_tag: loading: 'lazy', sizes: '(min-width: 750px) 50vw, 100vw' }}</div>
+    {%- endif -%}
+
     <ol class="bs-steps" style="--n: {{ bs_n | at_least: 1 }};">
       <li class="bs-track" aria-hidden="true"><span class="bs-fill" style="width: {{ bs_pct }}%;"></span></li>
       {%- for block in section.blocks -%}
@@ -430,17 +515,22 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
           </button>
           <div class="bs-detail">
             <div>
-              <div class="bs-card{% if block.settings.stat != blank %} has-stat{% endif %}">
-                <div>
-                  <span class="bs-pill">{{ block.settings.label }}</span>
-                  {%- if block.settings.title != blank -%}<p class="bs-ct">{{ block.settings.title }}</p>{%- endif -%}
-                  {%- if block.settings.text != blank -%}<p class="bs-cx">{{ block.settings.text }}</p>{%- endif -%}
-                </div>
-                {%- if block.settings.stat != blank -%}
-                  <div class="bs-stat">
-                    <p class="bs-sv">{{ block.settings.stat }}</p>
-                    {%- if block.settings.stat_label != blank -%}<p class="bs-sl">{{ block.settings.stat_label }}</p>{%- endif -%}
+              <div class="bs-card{% if block.settings.stat != blank %} has-stat{% endif %}{% if bs_img != blank %} has-img{% endif %}">
+                <div class="bs-cb">
+                  <div>
+                    <span class="bs-pill">{{ block.settings.label }}</span>
+                    {%- if block.settings.title != blank -%}<p class="bs-ct">{{ block.settings.title }}</p>{%- endif -%}
+                    {%- if block.settings.text != blank -%}<p class="bs-cx">{{ block.settings.text }}</p>{%- endif -%}
                   </div>
+                  {%- if block.settings.stat != blank -%}
+                    <div class="bs-stat">
+                      <p class="bs-sv">{{ block.settings.stat }}</p>
+                      {%- if block.settings.stat_label != blank -%}<p class="bs-sl">{{ block.settings.stat_label }}</p>{%- endif -%}
+                    </div>
+                  {%- endif -%}
+                </div>
+                {%- if bs_img != blank -%}
+                  <div class="bs-cimg">{{ bs_img | image_url: width: 900 | image_tag: loading: 'lazy', sizes: '(min-width: 750px) 40vw, 100vw' }}</div>
                 {%- endif -%}
               </div>
             </div>
@@ -490,6 +580,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
       { type: "text", id: "eyebrow", label: "Eyebrow", default: str(config, "eyebrow") },
       { type: "text", id: "heading", label: "Heading", default: str(config, "heading") },
       { type: "textarea", id: "subheading", label: "Subheading", default: str(config, "subheading") },
+      { type: "image_picker", id: "image", label: "Image", info: "Shows beside the milestone details, and above the timeline on mobile. Leave empty for no photo." },
       { type: "range", id: "selected", label: "Preselected milestone", min: 1, max: 6, step: 1, default: Math.max(1, Math.min(6, num(config, "selected", 2))) },
       { type: "header", content: "Footnote" },
       { type: "checkbox", id: "show_footnote", label: "Show footnote", default: bool(config, "showFootnote", true) },
@@ -549,6 +640,10 @@ export const resultsTimeline: Tweak = {
     { key: "eyebrow", label: "Eyebrow", type: "text", group: "Content" },
     { key: "heading", label: "Heading", type: "text", group: "Content" },
     { key: "subheading", label: "Subheading", type: "textarea", group: "Content" },
+    {
+      key: "image", label: "Image URL", type: "text", group: "Media",
+      hint: "Sits beside the milestone details (above the timeline on mobile). Leave empty for no photo. In Shopify you pick it with the image picker",
+    },
     {
       key: "milestones", label: "Milestones", type: "list", group: "Milestones",
       hint: "The stat is optional; leave it empty to hide it",

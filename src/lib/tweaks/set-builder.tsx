@@ -36,12 +36,12 @@ const defaults: TweakConfig = {
   progressText: "Add {{count}} more to save {{percent}}",
   unlockedText: "You've unlocked {{percent}} off",
   products: [
-    { name: "Petal Balm", type: "Tinted lip balm", sizeA: "10 ml", priceA: "14", sizeB: "20 ml", priceB: "22", badge: "Best seller" },
-    { name: "Hydra Serum", type: "Hydrating serum", sizeA: "30 ml", priceA: "28", sizeB: "50 ml", priceB: "40", badge: "" },
-    { name: "Soft Wash", type: "Gentle gel cleanser", sizeA: "100 ml", priceA: "18", sizeB: "200 ml", priceB: "26", badge: "" },
-    { name: "Daily Whip", type: "Light moisturizer", sizeA: "50 ml", priceA: "26", sizeB: "100 ml", priceB: "38", badge: "New" },
-    { name: "Sheer Tint", type: "Skin tint, SPF 20", sizeA: "30 ml", priceA: "26", sizeB: "", priceB: "", badge: "" },
-    { name: "Night Veil", type: "Overnight mask", sizeA: "50 ml", priceA: "30", sizeB: "100 ml", priceB: "44", badge: "Staff pick" },
+    { name: "Hydra Serum", type: "Hydrating serum", image: "/mockups/set-serum.jpg", sizeA: "30 ml", priceA: "28", sizeB: "50 ml", priceB: "40", badge: "Best seller" },
+    { name: "Daily Whip", type: "Light moisturizer", image: "/mockups/set-cream.jpg", sizeA: "50 ml", priceA: "26", sizeB: "100 ml", priceB: "38", badge: "" },
+    { name: "Soft Wash", type: "Gentle gel cleanser", image: "/mockups/set-cleanser.jpg", sizeA: "100 ml", priceA: "18", sizeB: "200 ml", priceB: "26", badge: "" },
+    { name: "Dew Mist", type: "Hydrating face mist", image: "/mockups/set-mist.jpg", sizeA: "100 ml", priceA: "22", sizeB: "", priceB: "", badge: "New" },
+    { name: "Petal Balm", type: "Multi-use balm", image: "/mockups/set-balm.jpg", sizeA: "10 ml", priceA: "14", sizeB: "20 ml", priceB: "22", badge: "" },
+    { name: "Sheer Tint", type: "Tinted lip balm", image: "/mockups/award-lip.jpg", sizeA: "4 g", priceA: "18", sizeB: "", priceB: "", badge: "Staff pick" },
   ],
   summaryTitle: "Your set",
   emptyText: "Tap a product to start your set.",
@@ -105,6 +105,38 @@ function Plus({ on }: { on: boolean }) {
   );
 }
 
+/** Small product thumbnail: the photo when there is one, the drawing otherwise. */
+function Thumb({
+  src,
+  kind,
+  tone,
+  size,
+  tile,
+  radius,
+}: {
+  src: string;
+  kind: ArtKind;
+  tone: string;
+  size: number;
+  tile: string;
+  radius: number;
+}) {
+  if (!src) return <ProductArt kind={kind} tone={tone} size={size} tile={tile} radius={radius} />;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      loading="lazy"
+      decoding="async"
+      className="block shrink-0 object-cover"
+      style={{ width: size, height: size, borderRadius: radius, background: tile }}
+    />
+  );
+}
+
 function Preview({ config }: { config: TweakConfig }) {
   const cur = str(config, "currency", "$");
   const bg = str(config, "bg", "#FFFFFF");
@@ -132,6 +164,7 @@ function Preview({ config }: { config: TweakConfig }) {
       name: p.name ?? "",
       type: p.type ?? "",
       badge: p.badge ?? "",
+      image: (p.image ?? "").trim(),
       sizes,
       art: ART[i % ART.length],
       tone: TONES[i % TONES.length],
@@ -305,22 +338,42 @@ function Preview({ config }: { config: TweakConfig }) {
                       aria-pressed={sel}
                       aria-label={p.name}
                       onClick={() => toggle(i)}
-                      className="group relative aspect-[4/5] w-full overflow-hidden transition-[background-color,box-shadow] duration-300"
-                      style={{
-                        background: sel ? pink : tile,
-                        borderRadius: radius,
-                        boxShadow: sel ? `inset 0 0 0 2px ${accent}` : `inset 0 0 0 1px ${tint(text, 0.04)}`,
-                      }}
+                      className="group relative aspect-[4/5] w-full overflow-hidden transition-[background-color] duration-300"
+                      style={{ background: sel ? pink : tile, borderRadius: radius }}
                     >
+                      {p.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={p.image}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 h-full w-full object-cover"
+                          style={{
+                            transform: sel ? "scale(1.04)" : "none",
+                            transition: `transform 600ms ${EASE}`,
+                          }}
+                        />
+                      ) : (
+                        <span
+                          className="absolute inset-0 grid place-items-center"
+                          style={{
+                            transform: sel ? "scale(1.05) translateY(-2px)" : "none",
+                            transition: `transform 600ms ${EASE}`,
+                          }}
+                        >
+                          <ProductArt kind={p.art} tone={p.tone} size={118} tile="transparent" />
+                        </span>
+                      )}
+                      {/* selection ring sits above the photo */}
                       <span
-                        className="absolute inset-0 grid place-items-center"
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 transition-[box-shadow] duration-300"
                         style={{
-                          transform: sel ? "scale(1.05) translateY(-2px)" : "none",
-                          transition: `transform 600ms ${EASE}`,
+                          borderRadius: radius,
+                          boxShadow: sel ? `inset 0 0 0 2px ${accent}` : `inset 0 0 0 1px ${tint(text, 0.05)}`,
                         }}
-                      >
-                        <ProductArt kind={p.art} tone={p.tone} size={118} tile="transparent" />
-                      </span>
+                      />
                       {p.badge && (
                         <span
                           className="absolute left-2 top-2 rounded-full bg-white px-2 py-[3px] text-[9.5px] uppercase tracking-[0.08em]"
@@ -388,7 +441,14 @@ function Preview({ config }: { config: TweakConfig }) {
               <ul className="mt-3 flex flex-col gap-2">
                 {on.map((i) => (
                   <li key={i} className="bs-fade-up flex items-center gap-2.5 bg-white p-1.5 pr-2" style={{ borderRadius: Math.max(6, radius - 4) }}>
-                    <ProductArt kind={products[i].art} tone={products[i].tone} size={38} tile={pink} radius={Math.max(4, radius - 6)} />
+                    <Thumb
+                      src={products[i].image}
+                      kind={products[i].art}
+                      tone={products[i].tone}
+                      size={38}
+                      tile={pink}
+                      radius={Math.max(4, radius - 6)}
+                    />
                     <div className="min-w-0 flex-1 leading-tight">
                       <p className="truncate text-[12.5px] font-medium">{products[i].name}</p>
                       <p className="truncate text-[11px]" style={{ color: muted }}>
@@ -451,7 +511,7 @@ function Preview({ config }: { config: TweakConfig }) {
                 className="bs-fade-up overflow-hidden rounded-full"
                 style={{ marginLeft: k ? -10 : 0, boxShadow: `0 0 0 2px ${bg}` }}
               >
-                <ProductArt kind={products[i].art} tone={products[i].tone} size={32} tile={pink} radius={99} />
+                <Thumb src={products[i].image} kind={products[i].art} tone={products[i].tone} size={32} tile={pink} radius={99} />
               </span>
             ))}
             {n > 3 && (
@@ -612,6 +672,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   Build-Your-Set Picker by boost.supply. Add it to a product or landing page.
   - Pick up to 6 products under "Set products". Each variant becomes a size
     chip (first 4 variants); sold-out variants are disabled.
+  - Tile and summary images are each product's featured image.
   - Badges: give a product a tag like "badge:Best seller".
   - IMPORTANT: the set discount shown here is display only. Create it in
     Shopify as automatic discounts (Discounts → Create discount → Amount off
@@ -894,17 +955,18 @@ export const setBuilder: Tweak = {
     { key: "currency", label: "Currency symbol", type: "text", group: "Content" },
     {
       key: "products", label: "Products", type: "list", group: "Products",
-      hint: "Preview only. Pick the real products in the Shopify theme editor; their variants become the size chips",
+      hint: "Preview only. Pick the real products in the Shopify theme editor; their featured images and variants are used there. Empty image URL shows a drawing",
       itemFields: [
         { key: "name", label: "Name", type: "text" },
         { key: "type", label: "Descriptor", type: "text" },
+        { key: "image", label: "Image URL", type: "text" },
         { key: "sizeA", label: "Size 1", type: "text" },
         { key: "priceA", label: "Price 1", type: "text" },
         { key: "sizeB", label: "Size 2 (optional)", type: "text" },
         { key: "priceB", label: "Price 2", type: "text" },
         { key: "badge", label: "Badge", type: "text" },
       ],
-      newItem: { name: "Brow Gel", type: "Clear brow gel", sizeA: "5 ml", priceA: "16", sizeB: "", priceB: "", badge: "" },
+      newItem: { name: "Night Veil", type: "Overnight mask", image: "/mockups/set-cream.jpg", sizeA: "50 ml", priceA: "30", sizeB: "100 ml", priceB: "44", badge: "" },
       addLabel: "Add product", max: 6,
     },
     { key: "preselected", label: "Preselected products", type: "slider", group: "Products", min: 0, max: 6, step: 1 },

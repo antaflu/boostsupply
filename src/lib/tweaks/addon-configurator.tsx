@@ -12,8 +12,10 @@ import { money, toNum } from "./product-art";
    Add-on Configurator
    Build-your-own product box: named finish swatches, a carry
    style segmented toggle, add-on checkboxes with their own
-   prices, a running total, a CTA and a guarantee row. The drawn
-   wallet recolours with the finish and shows each add-on.
+   prices, a running total, a CTA and a guarantee row. A product
+   photo leads, with a glass build tag listing the finish, carry
+   style and every add-on picked. Without a photo, a drawn wallet
+   recolours with the finish and shows each add-on.
    ============================================================ */
 
 const EASE = "cubic-bezier(.22,1,.36,1)";
@@ -22,19 +24,20 @@ const defaults: TweakConfig = {
   badge: "Build yours",
   title: "The slim wallet",
   subtitle: "Two metal plates, one band. Holds 1 to 12 cards and blocks card skimming.",
+  image: "/mockups/wallet.jpg",
   currency: "$",
   finishLabel: "Finish",
   finishes: [
-    { name: "Gunmetal", hex: "#55585d", price: "95" },
     { name: "Matte Black", hex: "#262626", price: "85" },
+    { name: "Gunmetal", hex: "#55585d", price: "95" },
     { name: "Titanium", hex: "#9a9ea4", price: "125" },
     { name: "Carbon", hex: "#2e2e2e", price: "135" },
     { name: "Sandstone", hex: "#c3ab88", price: "95" },
   ],
   styleLabel: "Carry",
   styles: [
-    { name: "Cash strap", price: "0" },
     { name: "Money clip", price: "0" },
+    { name: "Cash strap", price: "0" },
   ],
   addonLabel: "Add-ons",
   addons: [
@@ -85,6 +88,19 @@ const tones = (hex: string) => ({
 });
 const textureOf = (name: string) =>
   /carbon/i.test(name) ? "carbon" : /matte/i.test(name) ? "matte" : "brushed";
+
+/** Swatch fill: a metal sheen plus the finish's texture. */
+const swatchBg = (name: string, hex: string) => {
+  const ft = tones(hex);
+  const tex = textureOf(name);
+  return (
+    (tex === "carbon"
+      ? `repeating-conic-gradient(rgba(0,0,0,.35) 0 25%, rgba(255,255,255,.06) 0 50%) 0 0/6px 6px, `
+      : tex === "brushed"
+        ? `repeating-linear-gradient(0deg, rgba(255,255,255,.1) 0 1px, transparent 1px 3px), `
+        : "") + `linear-gradient(135deg, ${ft.light}, ${hex} 45%, ${ft.shine} 55%, ${hex} 65%, ${ft.dark})`
+  );
+};
 
 /** What each add-on shows on the drawn wallet, by keyword. */
 const addonVis = (name: string) =>
@@ -139,9 +155,9 @@ function walletSvg(u: string): string {
 }
 
 /* small drawn thumbnails for the add-on rows (preview only) */
-function AddonThumb({ kind, color }: { kind: string; color: string }) {
+function AddonThumb({ kind, color, size = 26 }: { kind: string; color: string; size?: number }) {
   return (
-    <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 26 26" aria-hidden fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       {kind === "tracker" ? (
         <>
           <rect x="3" y="3" width="20" height="20" rx="6" />
@@ -191,6 +207,7 @@ function Preview({ config }: { config: TweakConfig }) {
     vis: addonVis(a.name ?? ""),
   }));
   const perks = list(config, "perks");
+  const image = str(config, "image").trim();
 
   const [fi, setFi] = useState(0);
   const [si, setSi] = useState(0);
@@ -237,26 +254,87 @@ function Preview({ config }: { config: TweakConfig }) {
           className="relative overflow-hidden @min-[640px]:sticky @min-[640px]:top-6"
           style={{ background: `linear-gradient(180deg, ${mix(panel, "#ffffff", 0.35)}, ${panel})`, borderRadius: radius + 2 }}
         >
-          <div className="grid aspect-[4/3] place-items-center @min-[640px]:aspect-square">
-            <div
-              className="w-[84%] max-w-[420px]"
-              style={vars}
-              dangerouslySetInnerHTML={{ __html: walletSvg(uid) }}
-            />
-          </div>
+          {image ? (
+            <div className="relative aspect-square">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={image}
+                alt={str(config, "title")}
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="grid aspect-[4/3] place-items-center @min-[640px]:aspect-square">
+              <div
+                className="w-[84%] max-w-[420px]"
+                style={vars}
+                dangerouslySetInnerHTML={{ __html: walletSvg(uid) }}
+              />
+            </div>
+          )}
           {str(config, "badge") && (
-            <span className={`absolute left-3 top-3 px-2.5 py-[5px] ${caps} text-[10.5px]`} style={{ background: text, color: bg, borderRadius: Math.max(2, radius - 3) }}>
+            <span
+              className={`absolute left-3 top-3 px-2.5 py-[5px] ${caps} text-[10.5px]`}
+              style={{ background: image ? bg : text, color: image ? text : bg, borderRadius: Math.max(2, radius - 3) }}
+            >
               {str(config, "badge")}
             </span>
           )}
-          <span
-            key={`${fin.name}-${style?.name}`}
-            className={`bs-swap absolute bottom-3 left-3 right-3 truncate text-center ${caps} text-[10.5px]`}
-            style={{ color: muted }}
-          >
-            {fin.name}
-            {style ? ` / ${style.name}` : ""}
-          </span>
+          {image ? (
+            /* build tag: what's configured, on frosted glass over the photo */
+            <div
+              className="absolute inset-x-3 bottom-3 flex flex-wrap items-center gap-1.5 p-1.5 text-white"
+              style={{
+                borderRadius: radius + 2,
+                background: "rgba(16,16,16,.5)",
+                backdropFilter: "blur(14px) saturate(1.3)",
+                WebkitBackdropFilter: "blur(14px) saturate(1.3)",
+                boxShadow: "inset 0 0 0 1px rgba(255,255,255,.13), 0 10px 30px rgba(0,0,0,.22)",
+              }}
+            >
+              <span className="flex h-7 min-w-0 max-w-full items-center gap-2 pl-0.5 pr-1.5">
+                <span
+                  key={fin.name}
+                  aria-hidden
+                  className="bs-swap block h-5 w-5 shrink-0"
+                  style={{
+                    borderRadius: Math.max(2, radius - 2),
+                    background: swatchBg(fin.name, fin.hex),
+                    boxShadow: "0 0 0 1px rgba(255,255,255,.28)",
+                  }}
+                />
+                <span key={`${fin.name}-${style?.name}`} className={`bs-swap truncate ${caps} text-[10.5px]`}>
+                  {fin.name}
+                  {style && <span className="opacity-60"> / {style.name}</span>}
+                </span>
+              </span>
+              {/* add-on chips; icon-only until the photo is wide enough, so the tag stays one line */}
+              {on.map((i) => (
+                <span
+                  key={i}
+                  title={addons[i].name}
+                  className={`bs-swap inline-flex h-7 min-w-7 max-w-full items-center justify-center gap-1.5 px-[7px] ${caps} text-[10px] @min-[880px]:pl-2 @min-[880px]:pr-2.5`}
+                  style={{ borderRadius: Math.max(2, radius - 1), background: "rgba(255,255,255,.13)" }}
+                >
+                  <span className="shrink-0">
+                    <AddonThumb kind={addons[i].vis} color="#fff" size={14} />
+                  </span>
+                  <span className="sr-only truncate @min-[880px]:not-sr-only">{addons[i].name}</span>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span
+              key={`${fin.name}-${style?.name}`}
+              className={`bs-swap absolute bottom-3 left-3 right-3 truncate text-center ${caps} text-[10.5px]`}
+              style={{ color: muted }}
+            >
+              {fin.name}
+              {style ? ` / ${style.name}` : ""}
+            </span>
+          )}
         </div>
 
         {/* Configurator */}
@@ -289,8 +367,6 @@ function Preview({ config }: { config: TweakConfig }) {
             <div role="radiogroup" aria-label={str(config, "finishLabel", "Finish")} className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(60px,1fr))] gap-2">
               {finishes.map((f, i) => {
                 const sel = f === fin;
-                const ft = tones(f.hex);
-                const ftex = textureOf(f.name);
                 return (
                   <button
                     key={i}
@@ -306,13 +382,7 @@ function Preview({ config }: { config: TweakConfig }) {
                         transitionTimingFunction: EASE,
                         borderRadius: radius,
                         boxShadow: sel ? `0 0 0 2px ${bg}, 0 0 0 4px ${text}` : `0 0 0 1px ${panel}`,
-                        background:
-                          (ftex === "carbon"
-                            ? `repeating-conic-gradient(rgba(0,0,0,.35) 0 25%, rgba(255,255,255,.06) 0 50%) 0 0/6px 6px, `
-                            : ftex === "brushed"
-                              ? `repeating-linear-gradient(0deg, rgba(255,255,255,.1) 0 1px, transparent 1px 3px), `
-                              : "") +
-                          `linear-gradient(135deg, ${ft.light}, ${f.hex} 45%, ${ft.shine} 55%, ${f.hex} 65%, ${ft.dark})`,
+                        background: swatchBg(f.name, f.hex),
                       }}
                     />
                     <span className="line-clamp-2 w-full text-center text-[9px] font-bold uppercase leading-[1.2] tracking-[0.04em]" style={{ color: sel ? text : muted }}>
@@ -494,8 +564,19 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   ${S} .bs-img { width: 100%; height: 100%; object-fit: cover; display: block; }
   ${S} .bs-badge { position: absolute; left: 12px; top: 12px; padding: 5px 10px; ${lab} font-size: 10.5px;
     background: {{ section.settings.text_color }}; color: {{ section.settings.bg }}; border-radius: {{ section.settings.radius | minus: 3 | at_least: 2 }}px; }
-  ${S} .bs-cap { position: absolute; left: 12px; right: 12px; bottom: 12px; text-align: center; ${lab} font-size: 10.5px; color: {{ section.settings.muted }};
+  ${S} .bs-sheet { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; }
+  ${S} .bs-cap { max-width: 100%; text-align: center; ${lab} font-size: 10.5px; color: {{ section.settings.muted }};
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  ${S} .bs-chips { display: none; }
+  ${S} .is-photo .bs-stage { aspect-ratio: 1; }
+  ${S} .is-photo .bs-badge { background: {{ section.settings.bg }}; color: {{ section.settings.text_color }}; }
+  ${S} .is-photo .bs-sheet { justify-content: flex-start; padding: 6px; border-radius: {{ section.settings.radius | plus: 2 }}px; color: #fff;
+    background: rgba(16,16,16,.5); -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.13), 0 10px 30px rgba(0,0,0,.22); }
+  ${S} .is-photo .bs-cap { padding: 0 6px; line-height: 28px; color: #fff; }
+  ${S} .is-photo .bs-chips { display: contents; }
+  ${S} .bs-chip { display: inline-flex; align-items: center; height: 28px; max-width: 100%; padding: 0 10px; ${lab} font-size: 10px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: {{ section.settings.radius | minus: 1 | at_least: 2 }}px; background: rgba(255,255,255,.13); }
   ${S} .bs-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
   ${S} .bs-title { font-family: inherit; font-size: 28px; font-weight: 900; text-transform: uppercase; line-height: .92; letter-spacing: -.02em; color: inherit; }
   ${S} .bs-base { margin-top: 2px; flex-shrink: 0; font-size: 20px; font-weight: 800; letter-spacing: -.01em; }
@@ -583,6 +664,10 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
     "Add-on" block. Checked add-ons are added to the cart with the main product.
   - Engraving text or other personalisation needs line item properties or an
     app; this section only adds the add-on product.
+  - Product visual: the photo comes from your product and variant images (give
+    each finish variant its own image to swap it). A frosted tag on the photo
+    lists the finish, style and checked add-ons. Pick "Drawn wallet" to use the
+    drawing that recolours with the finish instead.
 {%- endcomment -%}
 {%- if product != blank -%}
 {%- assign bs_v = product.selected_or_first_available_variant -%}
@@ -611,11 +696,13 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   {%- endif -%}
 {%- endfor -%}
 {%- assign bs_cur_sty_l = bs_cur_sty | downcase -%}
+{%- assign bs_photo = false -%}
+{%- if section.settings.visual == 'image' and product.featured_media != blank -%}{%- assign bs_photo = true -%}{%- endif -%}
 <div class="bs-ac-{{ section.id }}" id="bs-ac-{{ section.id }}" data-fi="{{ bs_fi }}" data-si="{{ bs_si }}">
   <div class="bs-wrap">
-    <div class="bs-vis">
+    <div class="bs-vis{% if bs_photo %} is-photo{% endif %}">
       <div class="bs-stage">
-        {%- if section.settings.visual == 'image' and product.featured_media != blank -%}
+        {%- if bs_photo -%}
           {%- assign bs_media = bs_v.featured_media | default: product.featured_media -%}
           {{ bs_media | image_url: width: 1200 | image_tag: class: 'bs-img', alt: product.title, loading: 'eager' }}
         {%- else -%}
@@ -625,7 +712,10 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
         {%- endif -%}
       </div>
       {%- if section.settings.badge != blank -%}<span class="bs-badge">{{ section.settings.badge }}</span>{%- endif -%}
-      <span class="bs-cap" data-cap>{{ bs_cur_fin }}{%- if bs_cur_sty != blank -%} / {{ bs_cur_sty }}{%- endif -%}</span>
+      <div class="bs-sheet">
+        <span class="bs-cap" data-cap>{{ bs_cur_fin }}{%- if bs_cur_sty != blank -%} / {{ bs_cur_sty }}{%- endif -%}</span>
+        <span class="bs-chips" data-chips></span>
+      </div>
     </div>
 
     <div class="bs-cfg">
@@ -821,6 +911,17 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
       setVar('tracker', flags.tracker);
       setVar('engrave', flags.engrave);
       setVar('key', flags.key);
+      var chips = $('[data-chips]');
+      if (chips) {
+        chips.innerHTML = '';
+        all('[data-add]:checked').forEach(function (el) {
+          var t = el.parentNode.querySelector('.bs-add-t');
+          var chip = document.createElement('span');
+          chip.className = 'bs-chip';
+          chip.textContent = t ? t.textContent : '';
+          chips.appendChild(chip);
+        });
+      }
       var atc = $('[data-atc]'), label = $('[data-atc-label]');
       if (!current) {
         atc.disabled = true;
@@ -890,10 +991,10 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
         id: "visual",
         label: "Product visual",
         options: [
+          { value: "image", label: "Product & variant images" },
           { value: "drawn", label: "Drawn wallet (recolours with the finish)" },
-          { value: "image", label: "Variant images" },
         ],
-        default: "drawn",
+        default: "image",
       },
       { type: "header", content: "Product options" },
       txt("text", "finish_option", "Finish option name", str(config, "finishOption", "Finish"), "Must match the option name on your product"),
@@ -991,7 +1092,7 @@ export const addonConfigurator: Tweak = {
   name: "Add-on Configurator",
   tagline: "Finish swatches, a carry-style toggle and priced add-ons with a running total.",
   description:
-    "Modeled on the wallet configurator Ridge uses on its product pages. Shoppers pick a named finish, switch carry style on a segmented toggle and tick add-ons that each show their own price, while the total and the add-to-cart button update live. A guarantee row closes it out. In Shopify the finish and style map to your product options, every add-on is a real product, and one click adds the main product plus the checked add-ons to the cart.",
+    "Modeled on the wallet configurator Ridge uses on its product pages. A product photo leads, with a frosted build tag that lists the finish, carry style and every add-on picked. Shoppers pick a named finish, switch carry style on a segmented toggle and tick add-ons that each show their own price, while the total and the add-to-cart button update live. A guarantee row closes it out. In Shopify the finish and style map to your product options, every add-on is a real product, and one click adds the main product plus the checked add-ons to the cart.",
   category: "product-page",
   tier: "paid",
   price: 39,
@@ -1004,6 +1105,10 @@ export const addonConfigurator: Tweak = {
     { key: "title", label: "Title", type: "text", group: "Content" },
     { key: "subtitle", label: "Subtitle", type: "textarea", group: "Content" },
     { key: "currency", label: "Currency symbol", type: "text", group: "Content" },
+    {
+      key: "image", label: "Image URL", type: "text", group: "Media",
+      hint: "Hero product photo, square works best. Leave empty for the drawn wallet that recolours with the finish. Preview only; your store uses the product's images",
+    },
     { key: "finishLabel", label: "Label", type: "text", group: "Finishes" },
     {
       key: "finishes", label: "Finishes", type: "list", group: "Finishes",

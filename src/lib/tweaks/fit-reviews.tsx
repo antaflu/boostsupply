@@ -10,10 +10,12 @@ import { toNum } from "./product-art";
 
 /* ============================================================
    Fit Review Summary
-   A gym-wear review summary: a big average with a star
-   histogram, a sizing scale with a "find your size" helper,
-   fit attribute scales (length, comfort, coverage) and short
-   review cards with size-bought / usual-size chips.
+   A gym-wear review summary: an in-action product photo, a big
+   average with a star histogram, a sizing scale with a "find
+   your size" helper, fit attribute scales (length, comfort,
+   coverage) and short review cards with size-bought / usual-size
+   chips. The photo sits on top on narrow screens and next to the
+   summary on wide ones (reviews then run in a row below).
    Bars and markers animate in when the section appears.
    ============================================================ */
 
@@ -25,6 +27,9 @@ const CHECK_PATH = "M12 2.5l2.3 1.7 2.8-.1.9 2.7 2.3 1.6-.9 2.7.9 2.7-2.3 1.6-.9
 const defaults: TweakConfig = {
   eyebrow: "Reviews",
   heading: "Tested in real sessions",
+  showImage: true,
+  image: "/mockups/fit-leggings.jpg",
+  imageCaption: "Squat-tested fabric",
   rating: "",
   count5: "1032",
   count4: "168",
@@ -265,6 +270,10 @@ function Preview({ config }: { config: TweakConfig }) {
   const attributes = list(config, "attributes");
   const reviews = list(config, "reviews");
   const linkText = str(config, "linkText");
+  const image = str(config, "image").trim();
+  const caption = str(config, "imageCaption");
+  /* no image (or toggled off) = the original two-column layout */
+  const showImg = bool(config, "showImage", true) && image !== "";
 
   const [pick, setPick] = useState<number | null>(null);
   const picked = pick !== null && pick < sizes.length ? pick : null;
@@ -305,7 +314,41 @@ function Preview({ config }: { config: TweakConfig }) {
           </h3>
         )}
 
-        <div className="mt-5 grid gap-3 @min-[720px]:mt-8 @min-[720px]:grid-cols-[minmax(0,340px)_minmax(0,1fr)] @min-[720px]:gap-8">
+        <div
+          className={`mt-5 grid gap-3 @min-[720px]:mt-8 @min-[720px]:gap-8 ${
+            showImg
+              ? "@min-[720px]:grid-cols-[minmax(0,1fr)_minmax(0,380px)]"
+              : "@min-[720px]:grid-cols-[minmax(0,340px)_minmax(0,1fr)]"
+          }`}
+        >
+          {/* Photo: on top when narrow, next to the summary when wide */}
+          {showImg && (
+            <figure
+              className="group relative m-0 aspect-square overflow-hidden @min-[480px]:aspect-[16/11] @min-[720px]:aspect-auto @min-[720px]:min-h-[420px]"
+              style={{ borderRadius: radius, background: text }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={image}
+                alt={caption}
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+                className="absolute inset-0 h-full w-full object-cover transition-[scale] duration-[1200ms] group-hover:scale-[1.03]"
+                style={{ objectPosition: "72% 58%", transitionTimingFunction: EASE }}
+              />
+              {caption && (
+                <figcaption
+                  className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full px-2.5 py-[7px] text-[10px] uppercase leading-none tracking-[0.1em] text-white backdrop-blur-md"
+                  style={{ fontFamily: MONO, background: "rgba(0,0,0,.45)" }}
+                >
+                  <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ background: accent }} />
+                  {caption}
+                </figcaption>
+              )}
+            </figure>
+          )}
+
           {/* Summary column */}
           <div className="flex min-w-0 flex-col gap-3">
             {/* Score + histogram */}
@@ -453,8 +496,8 @@ function Preview({ config }: { config: TweakConfig }) {
             </div>
           </div>
 
-          {/* Reviews column */}
-          <div className="flex min-w-0 flex-col gap-3">
+          {/* Reviews column (a full-width row under photo + summary when wide) */}
+          <div className={`flex min-w-0 flex-col gap-3 ${showImg ? "@min-[720px]:col-span-2" : ""}`}>
             <div className="flex items-baseline justify-between gap-3 pt-2 @min-[720px]:pt-0">
               <p className="text-[16px]" style={display}>
                 {str(config, "reviewsTitle")}
@@ -463,54 +506,58 @@ function Preview({ config }: { config: TweakConfig }) {
                 {reviews.length} of {fmt(total)}
               </span>
             </div>
-            {reviews.map((r, i) => (
-              <article key={i} className="bs-rise p-4" style={{ ...panel, "--i": i } as CSSProperties}>
-                <div className="flex items-center justify-between gap-3">
-                  <Stars value={clamp(toNum(r.rating, 5), 0, 5)} size={12} gap={2} on={text} off={track} />
-                  <span className="text-[11px]" style={{ color: muted }}>
-                    {r.date}
-                  </span>
-                </div>
-                <p className="mt-2.5 text-[15px]" style={{ ...display, lineHeight: 1 }}>
-                  {r.title}
-                </p>
-                <p className="mt-1.5 text-[13px] leading-[1.5]">{r.body}</p>
-                {(r.size || r.usual) && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {[
-                      [str(config, "boughtLabel"), r.size],
-                      [str(config, "usualLabel"), r.usual],
-                    ]
-                      .filter(([, v]) => v)
-                      .map(([l, v], k) => (
-                        <span
-                          key={k}
-                          className="rounded-full px-2.5 py-1 text-[11px]"
-                          style={{ background: tint(track, 0.55) }}
-                        >
-                          <span style={{ color: muted }}>{l}:</span> <b className="font-bold">{v}</b>
-                        </span>
-                      ))}
-                  </div>
-                )}
-                <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px]">
-                  <b className="font-bold">{r.name}</b>
-                  {str(config, "verifiedLabel") && (
-                    <span className="inline-flex items-center gap-1 font-medium" style={{ color: linkColor }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden>
-                        <path d={CHECK_PATH} fill="currentColor" />
-                        <path d="M8.4 12.2l2.4 2.4 4.8-4.9" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      {str(config, "verifiedLabel")}
+            <div className={`grid gap-3 ${showImg ? "@min-[720px]:grid-cols-3" : ""}`}>
+              {reviews.map((r, i) => (
+                <article key={i} className="bs-rise flex flex-col p-4" style={{ ...panel, "--i": i } as CSSProperties}>
+                  <div className="flex items-center justify-between gap-3">
+                    <Stars value={clamp(toNum(r.rating, 5), 0, 5)} size={12} gap={2} on={text} off={track} />
+                    <span className="text-[11px]" style={{ color: muted }}>
+                      {r.date}
                     </span>
+                  </div>
+                  <p className="mt-2.5 text-[15px]" style={{ ...display, lineHeight: 1 }}>
+                    {r.title}
+                  </p>
+                  <p className="mt-1.5 text-[13px] leading-[1.5]">{r.body}</p>
+                  {(r.size || r.usual) && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {[
+                        [str(config, "boughtLabel"), r.size],
+                        [str(config, "usualLabel"), r.usual],
+                      ]
+                        .filter(([, v]) => v)
+                        .map(([l, v], k) => (
+                          <span
+                            key={k}
+                            className="rounded-full px-2.5 py-1 text-[11px]"
+                            style={{ background: tint(track, 0.55) }}
+                          >
+                            <span style={{ color: muted }}>{l}:</span> <b className="font-bold">{v}</b>
+                          </span>
+                        ))}
+                    </div>
                   )}
-                </div>
-              </article>
-            ))}
+                  <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-3 text-[12px]">
+                    <b className="font-bold">{r.name}</b>
+                    {str(config, "verifiedLabel") && (
+                      <span className="inline-flex items-center gap-1 font-medium" style={{ color: linkColor }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden>
+                          <path d={CHECK_PATH} fill="currentColor" />
+                          <path d="M8.4 12.2l2.4 2.4 4.8-4.9" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        {str(config, "verifiedLabel")}
+                      </span>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
             {linkText && (
               <button
                 type="button"
-                className="mt-1 h-11 w-full rounded-full text-[13px] font-bold uppercase tracking-[0.04em] transition-[background-color,color] duration-200 hover:bg-[var(--c)] hover:text-[var(--b)]"
+                className={`mt-1 h-11 w-full rounded-full text-[13px] font-bold uppercase tracking-[0.04em] transition-[background-color,color] duration-200 hover:bg-[var(--c)] hover:text-[var(--b)] ${
+                  showImg ? "@min-[720px]:mx-auto @min-[720px]:max-w-[320px]" : ""
+                }`}
                 style={{ boxShadow: `inset 0 0 0 1.5px ${text}`, "--c": text, "--b": bg } as CSSProperties}
               >
                 {linkText}
@@ -551,11 +598,18 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   ${S} .bs-disp { font-family: ${disp.family}; font-weight: 800; font-stretch: condensed; letter-spacing: -.015em; line-height: .9;
     {%- if section.settings.display_caps %} text-transform: uppercase;{% endif %} }
   ${S} .bs-mono { font-family: ${mono}; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: {{ section.settings.muted }}; }
+  ${S} .bs-cap { position: absolute; left: 12px; bottom: 12px; display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 99px; line-height: 1;
+    color: #fff; background: rgba(0,0,0,.45); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+  ${S} .bs-cap i { width: 6px; height: 6px; border-radius: 99px; background: {{ section.settings.accent }}; }
   ${S} .bs-eye { display: flex; align-items: center; gap: 6px; font-size: 10.5px; letter-spacing: .12em; }
   ${S} .bs-eye i { width: 6px; height: 6px; border-radius: 99px; background: {{ section.settings.accent }}; }
   ${S} .bs-h { margin-top: 8px; font-size: 32px; }
   ${S} .bs-grid { display: grid; gap: 12px; margin-top: 20px; }
   ${S} .bs-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  ${S} .bs-photo { position: relative; margin: 0; overflow: hidden; aspect-ratio: 1; border-radius: ${r}; background: {{ section.settings.text_color }}; }
+  ${S} .bs-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 72% 58%; transition: transform 1.2s ${ease}; }
+  ${S} .bs-photo:hover img { transform: scale(1.03); }
+  ${S} .bs-cards { display: flex; flex-direction: column; gap: 12px; }
   ${S} .bs-panel { padding: 16px; background: {{ section.settings.card }}; border-radius: ${r}; box-shadow: inset 0 0 0 1px {{ section.settings.track }}; }
   ${S} .bs-score { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 20px; }
   ${S} .bs-avg { font-size: 64px; line-height: .82; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
@@ -612,6 +666,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   ${S} .bs-attrs { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid {{ section.settings.track }}; }
   ${S} .bs-rh { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-top: 8px; }
   ${S} .bs-rh .bs-disp { font-size: 16px; }
+  ${S} .bs-rev { display: flex; flex-direction: column; }
   ${S} .bs-rev .bs-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   ${S} .bs-date { font-size: 11px; color: {{ section.settings.muted }}; }
   ${S} .bs-rt { margin-top: 10px; font-size: 15px; line-height: 1; }
@@ -619,7 +674,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   ${S} .bs-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
   ${S} .bs-tag { padding: 4px 10px; border-radius: 99px; font-size: 11px; background: {{ section.settings.track | color_modify: 'alpha', 0.55 }}; }
   ${S} .bs-tag span { color: {{ section.settings.muted }}; }
-  ${S} .bs-who { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 12px; font-size: 12px; }
+  ${S} .bs-who { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: auto; padding-top: 12px; font-size: 12px; }
   ${S} .bs-ver { display: inline-flex; align-items: center; gap: 4px; font-weight: 500; color: {{ section.settings.link_color }}; }
   ${S} .bs-all { display: flex; align-items: center; justify-content: center; height: 44px; margin-top: 4px; border-radius: 99px; font-size: 13px; font-weight: 700;
     text-transform: uppercase; letter-spacing: .04em; color: {{ section.settings.text_color }}; text-decoration: none;
@@ -627,14 +682,20 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   ${S} .bs-all:hover { background: {{ section.settings.text_color }}; color: {{ section.settings.bg }}; }
   @keyframes bs-fr-rise { from { opacity: 0; transform: translateY(8px); } }
   ${S}.is-in .bs-rev { animation: bs-fr-rise .6s ${ease} both; animation-delay: calc(var(--i, 0) * 60ms + 200ms); }
+  @container (min-width: 480px) { ${S} .bs-photo { aspect-ratio: 16 / 11; } }
   @container (min-width: 720px) {
     ${S} .bs-wrap { padding: 40px 40px 48px; }
     ${S} .bs-h { font-size: 44px; }
     ${S} .bs-grid { grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 32px; margin-top: 32px; }
     ${S} .bs-rh { padding-top: 0; }
+    ${S} .bs-grid.has-img { grid-template-columns: minmax(0, 1fr) minmax(0, 380px); }
+    ${S} .has-img .bs-photo { aspect-ratio: auto; min-height: 420px; }
+    ${S} .has-img .bs-reviews { grid-column: 1 / -1; }
+    ${S} .has-img .bs-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    ${S} .has-img .bs-all { width: min(100%, 320px); margin: 4px auto 0; }
   }
   @media (prefers-reduced-motion: reduce) {
-    ${S} .bs-fill, ${S} .bs-mk { transition: none; }
+    ${S} .bs-fill, ${S} .bs-mk, ${S} .bs-photo img { transition: none; }
     ${S}.is-in .bs-rev { animation: none; }
   }
 </style>`;
@@ -650,6 +711,9 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   To make it live, swap the settings for your reviews app's metafields,
   e.g. product.metafields.reviews.rating / reviews.rating_count (Shopify's
   standard review metafields) or the fit metafields your reviews app writes.
+  Photo: comes from the image picker; leave it empty to use the product's
+  featured image on product pages. No image (or "Show photo" off) keeps the
+  two-column layout without a photo.
 {%- endcomment -%}
 {%- liquid
   assign bs_total = 0
@@ -698,6 +762,14 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
     assign bs_advice = section.settings.advice_true
     assign bs_shift = 0
   endif
+  assign bs_img = section.settings.image
+  if bs_img == blank and product != blank
+    assign bs_img = product.featured_image
+  endif
+  assign bs_show_img = false
+  if section.settings.show_image and bs_img != blank
+    assign bs_show_img = true
+  endif
   assign bs_review_count = 0
   for block in section.blocks
     if block.type == 'review'
@@ -710,7 +782,13 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
     {%- if section.settings.eyebrow != blank -%}<p class="bs-mono bs-eye"><i aria-hidden="true"></i>{{ section.settings.eyebrow }}</p>{%- endif -%}
     {%- if section.settings.heading != blank -%}<h2 class="bs-h bs-disp">{{ section.settings.heading }}</h2>{%- endif -%}
 
-    <div class="bs-grid">
+    <div class="bs-grid{% if bs_show_img %} has-img{% endif %}">
+      {%- if bs_show_img -%}
+        <figure class="bs-photo">
+          {{ bs_img | image_url: width: 1200 | image_tag: loading: 'lazy', alt: section.settings.image_caption, sizes: '(min-width: 990px) 560px, 100vw' }}
+          {%- if section.settings.image_caption != blank -%}<figcaption class="bs-mono bs-cap"><i aria-hidden="true"></i>{{ section.settings.image_caption }}</figcaption>{%- endif -%}
+        </figure>
+      {%- endif -%}
       <div class="bs-col">
         <div class="bs-panel bs-score">
           <div>
@@ -807,11 +885,12 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
         </div>
       </div>
 
-      <div class="bs-col">
+      <div class="bs-col bs-reviews">
         <div class="bs-rh">
           <p class="bs-disp">{{ section.settings.reviews_title }}</p>
           <span class="bs-mono">{{ bs_review_count }} of {{ bs_total_fmt }}</span>
         </div>
+        <div class="bs-cards">
         {%- assign bs_ri = 0 -%}
         {%- for block in section.blocks -%}
           {%- if block.type == 'review' -%}
@@ -837,6 +916,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
             {%- assign bs_ri = bs_ri | plus: 1 -%}
           {%- endif -%}
         {%- endfor -%}
+        </div>
         {%- if section.settings.link_text != blank -%}
           <a class="bs-all" href="{{ section.settings.link_url | default: '#' }}">{{ section.settings.link_text }}</a>
         {%- endif -%}
@@ -889,6 +969,10 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
     settings: [
       { type: "text", id: "eyebrow", label: "Eyebrow", default: str(config, "eyebrow") },
       { type: "text", id: "heading", label: "Heading", default: str(config, "heading") },
+      { type: "header", content: "Photo" },
+      { type: "checkbox", id: "show_image", label: "Show photo", default: bool(config, "showImage", true) },
+      { type: "image_picker", id: "image", label: "Photo", info: "Leave empty to use the product's featured image on product pages. An in-action shot works best." },
+      { type: "text", id: "image_caption", label: "Photo caption", default: str(config, "imageCaption") },
       { type: "header", content: "Rating" },
       { type: "text", id: "rating", label: "Average rating (leave empty to calculate from the counts)", default: str(config, "rating") || undefined },
       { type: "number", id: "count_5", label: "5-star reviews", default: counts[5] },
@@ -1004,6 +1088,9 @@ export const fitReviews: Tweak = {
   fields: [
     { key: "eyebrow", label: "Eyebrow", type: "text", group: "Content" },
     { key: "heading", label: "Heading", type: "text", group: "Content" },
+    { key: "showImage", label: "Show photo", type: "toggle", group: "Media" },
+    { key: "image", label: "Image URL", type: "text", group: "Media", hint: "Editor preview only. In Shopify you pick the photo in the theme editor (or it uses the product's featured image). Leave empty to hide the photo", placeholder: "https://…" },
+    { key: "imageCaption", label: "Photo caption", type: "text", group: "Media", hint: "Leave empty to hide" },
     { key: "rating", label: "Average rating", type: "text", group: "Rating", hint: "Leave empty to calculate it from the star counts", placeholder: "Auto" },
     { key: "count5", label: "5-star reviews", type: "text", group: "Rating" },
     { key: "count4", label: "4-star reviews", type: "text", group: "Rating" },

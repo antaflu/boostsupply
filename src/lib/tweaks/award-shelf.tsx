@@ -12,8 +12,9 @@ import { ProductArt, money, toNum, type ArtKind } from "./product-art";
    A calm horizontal shelf of award-winning products. Each tile
    pairs a product with its award (category, publication, year),
    a one-word role above a lowercase product name, the price and
-   a minimal add button. Scroll-snaps on narrow screens, arrows
-   and a hairline progress bar on wide ones.
+   a minimal add button. Tiles show a product photo (falls back to
+   a drawn product when the image is empty). Scroll-snaps on narrow
+   screens, arrows and a hairline progress bar on wide ones.
    ============================================================ */
 
 const SERIF = "Georgia, 'Iowan Old Style', 'Times New Roman', serif";
@@ -27,11 +28,10 @@ const defaults: TweakConfig = {
   linkText: "Shop award winners",
   currency: "$",
   items: [
-    { role: "prep", name: "dewy prep primer", price: "32", award: "Best glow primer", publication: "The Beauty Ledger", year: "2025" },
-    { role: "glow", name: "daily glow serum", price: "29", award: "Best hydrating serum", publication: "Skin Quarterly", year: "2024" },
-    { role: "seal", name: "rich barrier cream", price: "36", award: "Best barrier cream", publication: "The Beauty Ledger", year: "2025" },
-    { role: "tint", name: "tinted lip treatment", price: "18", award: "Best lip treatment", publication: "Modern Muse", year: "2024" },
-    { role: "cleanse", name: "soft cream cleanser", price: "28", award: "Best gentle cleanser", publication: "Glow Report", year: "2024" },
+    { role: "prep", name: "dewy prep primer", price: "32", award: "Best glow primer", publication: "The Beauty Ledger", year: "2025", image: "/mockups/award-primer.jpg" },
+    { role: "glow", name: "daily glow serum", price: "29", award: "Best hydrating serum", publication: "Skin Quarterly", year: "2024", image: "/mockups/award-serum.jpg" },
+    { role: "seal", name: "rich barrier cream", price: "36", award: "Best barrier cream", publication: "The Beauty Ledger", year: "2025", image: "/mockups/award-cream.jpg" },
+    { role: "tint", name: "tinted lip treatment", price: "18", award: "Best lip treatment", publication: "Modern Muse", year: "2024", image: "/mockups/award-lip.jpg" },
   ],
   addText: "add",
   addedText: "added",
@@ -138,7 +138,8 @@ function Preview({ config }: { config: TweakConfig }) {
                 {str(config, "linkText")}
               </span>
             )}
-            <div className="hidden gap-1.5 @min-[720px]:flex">
+            {/* arrows only when the shelf actually scrolls */}
+            <div className={`hidden gap-1.5 ${scroll.w < 0.999 ? "@min-[720px]:flex" : ""}`}>
               {([-1, 1] as const).map((d) => {
                 const off = d < 0 ? scroll.start : scroll.end;
                 return (
@@ -167,23 +168,40 @@ function Preview({ config }: { config: TweakConfig }) {
         >
           {items.map((it, i) => {
             const on = added.includes(i);
+            const img = (it.image ?? "").trim();
             return (
               <article
                 key={i}
-                className="bs-rise group flex w-[44%] shrink-0 snap-start flex-col @min-[520px]:w-[30.5%] @min-[760px]:w-[23%]"
+                className={`bs-rise group flex w-[44%] shrink-0 snap-start flex-col @min-[520px]:w-[30.5%] ${
+                  /* four or fewer tiles fill the row on wide screens */
+                  items.length <= 4 ? "@min-[760px]:w-[calc((100%-36px)/4)]" : "@min-[760px]:w-[23%]"
+                }`}
                 style={{ "--i": i } as CSSProperties}
               >
                 <div className="relative aspect-[4/5] overflow-hidden" style={{ background: tile, borderRadius: radius }}>
-                  <div
-                    className="absolute inset-0 grid place-items-center transition-[scale] duration-700 group-hover:scale-[1.04] [&>div]:h-[82%]! [&>div]:w-[82%]! [&_svg]:h-full! [&_svg]:w-full!"
-                    style={{ transitionTimingFunction: EASE }}
-                  >
-                    <ProductArt kind={ART[i % ART.length]} tone={TONES[i % TONES.length]} tile="transparent" radius={0} size={140} />
-                  </div>
+                  {img ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={img}
+                      alt={it.name ?? ""}
+                      loading="lazy"
+                      decoding="async"
+                      draggable={false}
+                      className="absolute inset-0 h-full w-full object-cover transition-[scale] duration-700 group-hover:scale-[1.04]"
+                      style={{ transitionTimingFunction: EASE }}
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-0 grid place-items-center transition-[scale] duration-700 group-hover:scale-[1.04] [&>div]:h-[82%]! [&>div]:w-[82%]! [&_svg]:h-full! [&_svg]:w-full!"
+                      style={{ transitionTimingFunction: EASE }}
+                    >
+                      <ProductArt kind={ART[i % ART.length]} tone={TONES[i % TONES.length]} tile="transparent" radius={0} size={140} />
+                    </div>
+                  )}
                   {bool(config, "showSeal", true) && it.year && (
                     <span
                       className="absolute left-2.5 top-2.5 grid h-[46px] w-[46px] place-content-center rounded-full text-center"
-                      style={{ boxShadow: `inset 0 0 0 1px ${tint(accent, 0.5)}, inset 0 0 0 3px ${tile}, inset 0 0 0 3.5px ${tint(accent, 0.3)}`, color: accent }}
+                      style={{ background: tile, boxShadow: `inset 0 0 0 1px ${tint(accent, 0.5)}, inset 0 0 0 3px ${tile}, inset 0 0 0 3.5px ${tint(accent, 0.3)}, 0 4px 14px -6px rgba(0,0,0,.25)`, color: accent }}
                     >
                       <span className="block text-[6.5px] font-medium uppercase leading-none tracking-[0.14em]">
                         {str(config, "sealText")}
@@ -294,6 +312,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
     color: inherit; box-shadow: inset 0 0 0 1px ${line}; transition: opacity .3s, background-color .3s; }
   ${S} .bs-arrow:hover:not(:disabled) { background: rgba(0,0,0,.04); }
   ${S} .bs-arrow:disabled { opacity: .3; cursor: default; }
+  ${S} .bs-arrows[hidden] { display: none; }
   ${S} .bs-rail { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 24px -20px 0; padding: 0 20px; scroll-padding: 0 20px;
     scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   ${S} .bs-rail::-webkit-scrollbar { display: none; }
@@ -335,7 +354,10 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
     ${S} .bs-arrows { display: flex; }
     ${S} .bs-rail { margin: 32px -40px 0; padding: 0 40px; scroll-padding: 0 40px; }
   }
-  @container (min-width: 760px) { ${S} .bs-tile { flex-basis: 23%; } }
+  @container (min-width: 760px) {
+    ${S} .bs-tile { flex-basis: 23%; }
+    ${S} .bs-rail.is-fit .bs-tile { flex-basis: calc((100% - 36px) / 4); }
+  }
 </style>`;
 
   const arrow = (d: -1 | 1) =>
@@ -348,6 +370,8 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   Award Shelf by boost.supply. Add one "Award winner" block per product:
   pick the product, then type its award, the publication and the year.
   "Display name" is optional and replaces the product title on the tile.
+  Tile images come from each product's featured image, so use a 4:5
+  photo there for the cleanest shelf.
   The add button adds the product's first available variant to the cart
   without leaving the page (it falls back to a normal cart redirect).
 {%- endcomment -%}
@@ -360,14 +384,14 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
       </div>
       <div class="bs-tools">
         {%- if section.settings.link_text != blank -%}<a class="bs-link" href="{{ section.settings.link_url | default: routes.all_products_collection_url }}">{{ section.settings.link_text }}</a>{%- endif -%}
-        <div class="bs-arrows">
+        <div class="bs-arrows" data-arrows>
           <button type="button" class="bs-arrow" data-dir="-1" aria-label="Previous">${arrow(-1)}</button>
           <button type="button" class="bs-arrow" data-dir="1" aria-label="Next">${arrow(1)}</button>
         </div>
       </div>
     </div>
 
-    <div class="bs-rail" data-rail>
+    <div class="bs-rail{% if section.blocks.size <= 4 %} is-fit{% endif %}" data-rail>
       {%- for block in section.blocks -%}
         {%- assign bs_p = block.settings.product -%}
         {%- assign bs_n = forloop.index0 | modulo: 6 | plus: 1 -%}
@@ -425,6 +449,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
     var thumb = prog && prog.querySelector('span');
     var prev = root.querySelector('[data-dir="-1"]');
     var next = root.querySelector('[data-dir="1"]');
+    var arrows = root.querySelector('[data-arrows]');
     function sync() {
       var max = rail.scrollWidth - rail.clientWidth;
       var w = rail.scrollWidth ? Math.min(1, rail.clientWidth / rail.scrollWidth) : 1;
@@ -434,6 +459,7 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
         thumb.style.width = w * 100 + '%';
         thumb.style.left = x * (1 - w) * 100 + '%';
       }
+      if (arrows) arrows.hidden = w > 0.999;
       if (prev) prev.disabled = rail.scrollLeft <= 2;
       if (next) next.disabled = rail.scrollLeft >= max - 2;
     }
@@ -553,8 +579,9 @@ export const awardShelf: Tweak = {
     { key: "currency", label: "Currency symbol", type: "text", group: "Content", hint: "Editor preview only; your store shows real prices" },
     {
       key: "items", label: "Award winners", type: "list", group: "Products",
-      hint: "Name and price are preview only. In Shopify you pick the real product per block",
+      hint: "Name, price and image are preview only. In Shopify each tile shows the real product and its featured image",
       itemFields: [
+        { key: "image", label: "Image URL", type: "text" },
         { key: "role", label: "Role", type: "text" },
         { key: "name", label: "Name", type: "text" },
         { key: "price", label: "Price", type: "text" },
@@ -562,7 +589,7 @@ export const awardShelf: Tweak = {
         { key: "publication", label: "Publication", type: "text" },
         { key: "year", label: "Year", type: "text" },
       ],
-      newItem: { role: "treat", name: "overnight lip mask", price: "22", award: "Best overnight mask", publication: "Modern Muse", year: "2025" },
+      newItem: { role: "treat", name: "overnight lip mask", price: "22", award: "Best overnight mask", publication: "Modern Muse", year: "2025", image: "/mockups/award-lip.jpg" },
       addLabel: "Add product", max: 8,
     },
     { key: "addText", label: "Add button", type: "text", group: "Tiles" },

@@ -9,11 +9,12 @@ import { money, toNum } from "./product-art";
 
 /* ============================================================
    Flavor Carousel
-   Bright flavour cards (each its own colour) with a drawn can,
-   a retro serif flavour name and a nutrition chip. A segmented
-   toggle switches product line (chips + can style change),
-   arrows and swipe move the rail, and every card has a quick
-   "Add 12 pack" button.
+   Bright flavour cards (each its own colour) topped with a product
+   photo that bleeds into the card colour (a drawn can stands in
+   when a flavour has no photo), a retro serif flavour name and a
+   nutrition chip. A segmented toggle switches product line (chip,
+   photo or can style and a line badge change), arrows and swipe
+   move the rail, and every card has a quick "Add 12 pack" button.
    ============================================================ */
 
 const EASE = "cubic-bezier(.22,1,.36,1)";
@@ -64,12 +65,9 @@ const defaults: TweakConfig = {
   price: "35.99",
   currency: "$",
   flavors: [
-    { name: "Black Cherry", color: "#E8434F", chip: "9g fiber · 4g sugar", chip2: "9g fiber · 1g sugar", tag: "Fan fave" },
-    { name: "Blood Orange", color: "#F7913D", chip: "9g fiber · 5g sugar", chip2: "9g fiber · 2g sugar", tag: "" },
-    { name: "Lemon Ginger", color: "#F4D44D", chip: "9g fiber · 3g sugar", chip2: "9g fiber · 1g sugar", tag: "" },
-    { name: "Watermelon Lime", color: "#F59CB4", chip: "9g fiber · 4g sugar", chip2: "9g fiber · 1g sugar", tag: "New" },
-    { name: "Green Apple", color: "#9BD36C", chip: "9g fiber · 5g sugar", chip2: "9g fiber · 2g sugar", tag: "" },
-    { name: "Vanilla Cream", color: "#E7C79B", chip: "9g fiber · 4g sugar", chip2: "9g fiber · 1g sugar", tag: "" },
+    { name: "Strawberry", color: "#F59AA5", image: "/mockups/soda-strawberry.jpg", image2: "", chip: "9g fiber · 4g sugar", chip2: "9g fiber · 1g sugar", tag: "New" },
+    { name: "Blood Orange", color: "#FB9108", image: "/mockups/soda-orange.jpg", image2: "", chip: "9g fiber · 5g sugar", chip2: "9g fiber · 2g sugar", tag: "" },
+    { name: "Black Cherry", color: "#7A1F2A", image: "/mockups/soda-cherry.jpg", image2: "", chip: "9g fiber · 4g sugar", chip2: "9g fiber · 1g sugar", tag: "Fan fave" },
   ],
   bg: "#FFF6EA",
   textColor: "#034638",
@@ -137,11 +135,14 @@ const readRail = (el: HTMLElement, count: number) => {
   const first = el.firstElementChild as HTMLElement | null;
   const step = first ? first.offsetWidth + GAP : el.clientWidth;
   const max = el.scrollWidth - el.clientWidth;
+  const scroll = max > 2;
   const end = el.scrollLeft >= max - 2;
   return {
-    i: end ? count - 1 : Math.min(count - 1, Math.round(el.scrollLeft / Math.max(1, step))),
+    i: !scroll ? 0 : end ? count - 1 : Math.min(count - 1, Math.round(el.scrollLeft / Math.max(1, step))),
     start: el.scrollLeft <= 2,
     end,
+    /* false when every card fits: arrows and dots hide */
+    scroll,
   };
 };
 
@@ -173,7 +174,7 @@ function Preview({ config }: { config: TweakConfig }) {
   const lite = showToggle && line === 1;
   const [added, setAdded] = useState<number[]>([]);
   const rail = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ i: 0, start: true, end: false });
+  const [pos, setPos] = useState({ i: 0, start: true, end: false, scroll: true });
   const count = flavors.length;
 
   useEffect(() => {
@@ -256,7 +257,7 @@ function Preview({ config }: { config: TweakConfig }) {
           ) : (
             <span />
           )}
-          <div className="flex gap-2">
+          <div className={`flex gap-2 ${pos.scroll ? "" : "invisible"}`}>
             {([-1, 1] as const).map((d) => {
               const off = d < 0 ? pos.start : pos.end;
               return (
@@ -297,36 +298,84 @@ function Preview({ config }: { config: TweakConfig }) {
               "--ce": lite ? canLabel : color,
               "--deep": ink,
             } as CSSProperties;
+            const img = (f.image ?? "").trim();
+            const img2 = (f.image2 ?? "").trim();
             return (
               <article
                 key={i}
-                className="bs-rise group relative flex w-[72%] shrink-0 snap-start flex-col items-center overflow-hidden p-4 text-center @min-[520px]:w-[45%] @min-[760px]:w-[31%]"
+                className={`bs-rise group relative flex w-[72%] shrink-0 snap-start flex-col items-center overflow-hidden text-center @min-[520px]:w-[45%] ${
+                  /* three or fewer cards fill the row on wide screens */
+                  count <= 3 ? "@min-[760px]:w-[calc((100%-24px)/3)]" : "@min-[760px]:w-[31%]"
+                }`}
                 style={{ ...vars, "--i": i } as CSSProperties}
               >
-                {/* Visual */}
-                <div className="relative grid aspect-square w-full place-items-center">
-                  <span
-                    className="absolute right-[6%] top-[8%] w-[26%] transition-[rotate,translate] duration-700 group-hover:-translate-y-1 group-hover:rotate-[40deg] [&_svg]:block [&_svg]:w-full"
-                    style={{ transitionTimingFunction: EASE }}
-                    dangerouslySetInnerHTML={{ __html: SLICE_SVG }}
-                  />
-                  <span
-                    className="absolute bottom-[14%] left-[5%] w-[18%] transition-[rotate,translate] duration-700 group-hover:translate-x-1 group-hover:-rotate-[30deg] [&_svg]:block [&_svg]:w-full"
-                    style={{ transitionTimingFunction: EASE }}
-                    dangerouslySetInnerHTML={{ __html: SLICE_SVG }}
-                  />
-                  <span aria-hidden className="absolute left-[22%] top-[22%] h-2 w-2 rounded-full bg-white/40" />
-                  <span aria-hidden className="absolute right-[20%] top-[46%] h-1.5 w-1.5 rounded-full bg-white/50" />
-                  <span aria-hidden className="absolute bottom-[30%] right-[26%] h-2.5 w-2.5 rounded-full bg-white/30" />
-                  <span
-                    key={lite ? "l" : "c"}
-                    className="relative h-[90%] transition-[rotate,translate] duration-500 group-hover:-translate-y-1.5 group-hover:-rotate-6 [&_svg]:h-full [&_svg]:w-auto"
-                    style={{ transitionTimingFunction: EASE, animation: `bs-swap 420ms ${EASE} both` }}
-                    dangerouslySetInnerHTML={{ __html: CAN_SVG }}
-                  />
+                {/* Visual: photo bleeding into the card colour, or the drawn can */}
+                <div className="relative grid aspect-[4/5] w-full place-items-center overflow-hidden">
+                  {img ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img}
+                        alt={f.name ?? ""}
+                        loading="lazy"
+                        decoding="async"
+                        draggable={false}
+                        className="absolute inset-0 h-full w-full object-cover transition-[scale] duration-700 group-hover:scale-[1.04]"
+                        style={{ transitionTimingFunction: EASE }}
+                      />
+                      {img2 && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={img2}
+                          alt={lite ? (f.name ?? "") : ""}
+                          aria-hidden={!lite}
+                          loading="lazy"
+                          decoding="async"
+                          draggable={false}
+                          className="absolute inset-0 h-full w-full object-cover transition-[opacity,scale] duration-500 group-hover:scale-[1.04]"
+                          style={{ opacity: lite ? 1 : 0, transitionTimingFunction: EASE }}
+                        />
+                      )}
+                      <span
+                        aria-hidden
+                        className="absolute inset-x-0 bottom-0 h-[26%]"
+                        style={{ background: `linear-gradient(to bottom, ${color}00, ${color})` }}
+                      />
+                      {lite && str(config, "line2") && (
+                        <span
+                          className="bs-swap absolute right-3 top-3 rounded-full px-2.5 py-[5px] text-[10px] font-extrabold uppercase leading-none tracking-[0.1em] backdrop-blur-sm"
+                          style={{ background: "rgba(255,255,255,.72)", color: ink }}
+                        >
+                          {str(config, "line2")}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <span
+                        className="absolute right-[6%] top-[10%] w-[26%] transition-[rotate,translate] duration-700 group-hover:-translate-y-1 group-hover:rotate-[40deg] [&_svg]:block [&_svg]:w-full"
+                        style={{ transitionTimingFunction: EASE }}
+                        dangerouslySetInnerHTML={{ __html: SLICE_SVG }}
+                      />
+                      <span
+                        className="absolute bottom-[16%] left-[6%] w-[18%] transition-[rotate,translate] duration-700 group-hover:translate-x-1 group-hover:-rotate-[30deg] [&_svg]:block [&_svg]:w-full"
+                        style={{ transitionTimingFunction: EASE }}
+                        dangerouslySetInnerHTML={{ __html: SLICE_SVG }}
+                      />
+                      <span aria-hidden className="absolute left-[22%] top-[24%] h-2 w-2 rounded-full bg-white/40" />
+                      <span aria-hidden className="absolute right-[20%] top-[48%] h-1.5 w-1.5 rounded-full bg-white/50" />
+                      <span aria-hidden className="absolute bottom-[30%] right-[26%] h-2.5 w-2.5 rounded-full bg-white/30" />
+                      <span
+                        key={lite ? "l" : "c"}
+                        className="absolute inset-x-0 bottom-[9%] top-[15%] flex justify-center transition-[rotate,translate] duration-500 group-hover:-translate-y-1.5 group-hover:-rotate-6 [&_svg]:h-full [&_svg]:w-auto"
+                        style={{ transitionTimingFunction: EASE, animation: `bs-swap 420ms ${EASE} both` }}
+                        dangerouslySetInnerHTML={{ __html: CAN_SVG }}
+                      />
+                    </>
+                  )}
                   {f.tag && (
                     <span
-                      className="absolute left-0 top-0 grid h-[54px] w-[54px] -rotate-12 place-items-center rounded-full px-1 text-center text-[9.5px] font-extrabold uppercase leading-[1.05] tracking-[0.04em]"
+                      className="absolute left-3 top-3 grid h-[54px] w-[54px] -rotate-12 place-items-center rounded-full px-1 text-center text-[9.5px] font-extrabold uppercase leading-[1.05] tracking-[0.04em] shadow-[0_4px_12px_-4px_rgba(0,0,0,0.3)]"
                       style={{ background: tagBg, color: str(config, "buttonText", "#FFF6EA") }}
                     >
                       {f.tag}
@@ -335,43 +384,45 @@ function Preview({ config }: { config: TweakConfig }) {
                 </div>
 
                 {/* Copy */}
-                <h4 className="mt-1 text-[27px]" style={display}>
-                  {f.name}
-                </h4>
-                {chip && (
-                  <span
-                    key={lite ? "c2" : "c1"}
-                    className="bs-swap mt-2.5 inline-flex rounded-full px-3 py-[5px] text-[11px] font-bold tracking-[0.01em]"
-                    style={{ background: "rgba(255,255,255,.6)", color: ink }}
-                  >
-                    {chip}
-                  </span>
-                )}
+                <div className="relative flex w-full flex-1 flex-col items-center px-4 pb-4">
+                  <h4 className="-mt-2 text-[27px]" style={display}>
+                    {f.name}
+                  </h4>
+                  {chip && (
+                    <span
+                      key={lite ? "c2" : "c1"}
+                      className="bs-swap mt-2.5 inline-flex rounded-full px-3 py-[5px] text-[11px] font-bold tracking-[0.01em]"
+                      style={{ background: "rgba(255,255,255,.6)", color: ink }}
+                    >
+                      {chip}
+                    </span>
+                  )}
 
-                <span aria-hidden className="block h-4 shrink-0" />
-                <button
-                  type="button"
-                  onClick={() => toggleAdd(i)}
-                  aria-pressed={on}
-                  className="mt-auto flex h-[46px] w-full shrink-0 items-center justify-center gap-2 rounded-full text-[14px] font-bold transition-[background-color,color,scale] duration-300 hover:brightness-110 active:scale-[0.97]"
-                  style={{ background: on ? addedBg : btnBg, color: on ? ink : btnFg, transitionTimingFunction: EASE }}
-                >
-                  <span key={on ? "on" : "off"} className="bs-swap inline-flex items-center gap-2">
-                    {on ? (
-                      <>
-                        <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M2.5 6.3l2.3 2.2 4.7-5" />
-                        </svg>
-                        {str(config, "addedLabel", "Added")}
-                      </>
-                    ) : (
-                      <>
-                        {str(config, "buttonLabel", "Add 12 pack")}
-                        {priceLabel && <span className="font-medium opacity-70">· {priceLabel}</span>}
-                      </>
-                    )}
-                  </span>
-                </button>
+                  <span aria-hidden className="block h-4 shrink-0" />
+                  <button
+                    type="button"
+                    onClick={() => toggleAdd(i)}
+                    aria-pressed={on}
+                    className="mt-auto flex h-[46px] w-full shrink-0 items-center justify-center gap-2 rounded-full text-[14px] font-bold transition-[background-color,color,scale] duration-300 hover:brightness-110 active:scale-[0.97]"
+                    style={{ background: on ? addedBg : btnBg, color: on ? ink : btnFg, transitionTimingFunction: EASE }}
+                  >
+                    <span key={on ? "on" : "off"} className="bs-swap inline-flex items-center gap-2">
+                      {on ? (
+                        <>
+                          <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <path d="M2.5 6.3l2.3 2.2 4.7-5" />
+                          </svg>
+                          {str(config, "addedLabel", "Added")}
+                        </>
+                      ) : (
+                        <>
+                          {str(config, "buttonLabel", "Add 12 pack")}
+                          {priceLabel && <span className="font-medium opacity-70">· {priceLabel}</span>}
+                        </>
+                      )}
+                    </span>
+                  </button>
+                </div>
               </article>
             );
           })}
@@ -379,7 +430,7 @@ function Preview({ config }: { config: TweakConfig }) {
 
         {/* Dots */}
         {count > 1 && (
-          <div className="mt-4 flex justify-center gap-1.5">
+          <div className={`mt-4 flex justify-center gap-1.5 ${pos.scroll ? "" : "invisible"}`}>
             {flavors.map((_, i) => (
               <button
                 key={i}
@@ -433,30 +484,41 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   ${S} .bs-arrow:hover:not(:disabled) { background: {{ section.settings.text_color }}; color: {{ section.settings.bg }}; }
   ${S} .bs-arrow:active:not(:disabled) { transform: scale(.9); }
   ${S} .bs-arrow:disabled { opacity: .3; cursor: default; }
+  ${S} .bs-arrows.is-idle, ${S} .bs-dots.is-idle { visibility: hidden; }
   ${S} .bs-rail { display: flex; gap: ${GAP}px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 20px -20px 0; padding: 4px 20px 8px; scroll-padding: 0 20px;
     scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   ${S} .bs-rail::-webkit-scrollbar { display: none; }
   ${S} .bs-card { --deep: {{ section.settings.text_color }}; --cb: var(--dk); --cp: {{ section.settings.can_label }}; --ce: var(--c);
     position: relative; flex: 0 0 72%; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; text-align: center;
-    padding: 16px; overflow: hidden; border-radius: ${r}; background: var(--c); color: {{ section.settings.text_color }}; }
+    overflow: hidden; border-radius: ${r}; background: var(--c); color: {{ section.settings.text_color }}; }
   ${S}[data-line="2"] .bs-card { --cb: {{ section.settings.can_label }}; --cp: var(--c); --ce: {{ section.settings.can_label }}; }
   ${S} .bs-card.is-dark { color: {{ section.settings.light_text }}; }
-  ${S} .bs-vis { position: relative; width: 100%; aspect-ratio: 1; display: grid; place-items: center; }
+  ${S} .bs-vis { position: relative; width: 100%; aspect-ratio: 4 / 5; overflow: hidden; }
+  ${S} .bs-photo { position: absolute; inset: 0; transition: opacity .5s cubic-bezier(.22,1,.36,1); }
+  ${S} .bs-photo img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .7s cubic-bezier(.22,1,.36,1); }
+  ${S} .bs-card:hover .bs-photo img { transform: scale(1.04); }
+  ${S} .bs-photo-2 { opacity: 0; }
+  ${S}[data-line="2"] .bs-photo-2 { opacity: 1; }
+  ${S} .bs-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 26%; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--c)); }
+  ${S} .bs-line { position: absolute; right: 12px; top: 12px; display: none; padding: 5px 10px; border-radius: 99px; font-size: 10px; font-weight: 800; line-height: 1;
+    text-transform: uppercase; letter-spacing: .1em; background: rgba(255,255,255,.72); color: {{ section.settings.text_color }}; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+  ${S}[data-line="2"] .bs-line { display: block; }
   ${S} .bs-slice { position: absolute; transition: transform .7s cubic-bezier(.22,1,.36,1); }
   ${S} .bs-slice svg { display: block; width: 100%; height: auto; }
-  ${S} .bs-s1 { right: 6%; top: 8%; width: 26%; }
-  ${S} .bs-s2 { left: 5%; bottom: 14%; width: 18%; }
+  ${S} .bs-s1 { right: 6%; top: 10%; width: 26%; }
+  ${S} .bs-s2 { left: 6%; bottom: 16%; width: 18%; }
   ${S} .bs-card:hover .bs-s1 { transform: translateY(-4px) rotate(40deg); }
   ${S} .bs-card:hover .bs-s2 { transform: translateX(4px) rotate(-30deg); }
   ${S} .bs-bub { position: absolute; border-radius: 99px; background: rgba(255,255,255,.4); }
-  ${S} .bs-shot { position: relative; height: 90%; display: flex; align-items: center; justify-content: center; transition: transform .5s cubic-bezier(.22,1,.36,1); }
+  ${S} .bs-shot { position: absolute; left: 0; right: 0; top: 15%; bottom: 9%; display: flex; justify-content: center; transition: transform .5s cubic-bezier(.22,1,.36,1); }
   ${S} .bs-card:hover .bs-shot { transform: translateY(-6px) rotate(-6deg); }
   ${S} .bs-shot svg { height: 100%; width: auto; }
-  ${S} .bs-shot img { max-height: 100%; width: auto; max-width: 100%; object-fit: contain; }
-  ${S} .bs-tag { position: absolute; left: 0; top: 0; width: 54px; height: 54px; display: grid; place-items: center; padding: 0 4px; border-radius: 99px; transform: rotate(-12deg);
+  ${S} .bs-tag { position: absolute; left: 12px; top: 12px; width: 54px; height: 54px; display: grid; place-items: center; padding: 0 4px; border-radius: 99px; transform: rotate(-12deg);
+    box-shadow: 0 4px 12px -4px rgba(0,0,0,.3);
     font-size: 9.5px; font-weight: 800; line-height: 1.05; text-transform: uppercase; letter-spacing: .04em; text-align: center;
     background: {{ section.settings.tag_bg }}; color: {{ section.settings.button_text }}; }
-  ${S} .bs-name { margin-top: 4px; font-size: 27px; }
+  ${S} .bs-body { position: relative; width: 100%; flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0 16px 16px; }
+  ${S} .bs-name { margin-top: -8px; font-size: 27px; }
   ${S} .bs-chip { margin-top: 10px; display: inline-flex; padding: 5px 12px; border-radius: 99px; font-size: 11px; font-weight: 700; letter-spacing: .01em;
     background: rgba(255,255,255,.6); color: {{ section.settings.text_color }}; }
   ${S} .bs-buy { width: 100%; margin-top: auto; padding-top: 16px; }
@@ -474,7 +536,6 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   ${S}[data-line="2"] .bs-l1 { display: none !important; }
   ${S}[data-line="2"] .bs-l2 { display: revert !important; }
   ${S}[data-line="2"] .bs-chip.bs-l2 { display: inline-flex !important; }
-  ${S}[data-line="2"] .bs-shot.bs-l2 { display: flex !important; }
   ${S} .bs-dots { display: flex; justify-content: center; gap: 6px; margin-top: 16px; }
   ${S} .bs-dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 99px; cursor: pointer; background: {{ section.settings.text_color | color_modify: 'alpha', 0.2 }};
     transition: width .3s cubic-bezier(.22,1,.36,1), background-color .3s; }
@@ -485,9 +546,12 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
     ${S} .bs-h { font-size: 52px; }
     ${S} .bs-rail { margin: 20px -40px 0; padding: 4px 40px 8px; scroll-padding: 0 40px; }
   }
-  @container (min-width: 760px) { ${S} .bs-card { flex-basis: 31%; } }
+  @container (min-width: 760px) {
+    ${S} .bs-card { flex-basis: 31%; }
+    ${S} .bs-rail.is-fit .bs-card { flex-basis: calc((100% - ${GAP * 2}px) / 3); }
+  }
   @media (prefers-reduced-motion: reduce) {
-    ${S} .bs-shot, ${S} .bs-slice, ${S} .bs-pill { transition: none; }
+    ${S} .bs-shot, ${S} .bs-slice, ${S} .bs-pill, ${S} .bs-photo, ${S} .bs-photo img { transition: none; }
   }
 </style>`;
 
@@ -516,7 +580,10 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
   Product line toggle: fill in the second chip and, optionally, a second
   product per flavour (e.g. the Lite version). Leave the second product
   empty to keep adding the first one. Turn the toggle off to hide it.
-  Optional: upload a transparent can/bottle image to replace the drawn can.
+  Card visuals come from each block's image picker: a 4:5 product photo
+  that fills the top of the card (set the card colour to match the photo's
+  backdrop so it blends in). Without a photo the drawn can is shown. The
+  second image is used while the second product line is selected.
 {%- endcomment -%}
 <div class="bs-fc-{{ section.id }}" id="bs-fc-{{ section.id }}" data-line="1" data-added="{{ section.settings.added_label | escape }}">
   <div class="bs-wrap">
@@ -531,31 +598,35 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
           <button type="button" data-line="2" aria-pressed="false">{{ section.settings.line_2_label }}</button>
         </div>
       {%- endif -%}
-      <div class="bs-arrows">
+      <div class="bs-arrows" data-arrows>
         <button type="button" class="bs-arrow" data-dir="-1" aria-label="Previous flavor">${chevron(-1)}</button>
         <button type="button" class="bs-arrow" data-dir="1" aria-label="Next flavor">${chevron(1)}</button>
       </div>
     </div>
 
-    <div class="bs-rail" data-rail>
+    <div class="bs-rail{% if section.blocks.size <= 3 %} is-fit{% endif %}" data-rail>
       {%- for block in section.blocks -%}
         {%- assign bs_br = block.settings.color | color_brightness -%}
         <article class="bs-card{% if bs_br < 140 %} is-dark{% endif %}" style="--c: {{ block.settings.color }}; --dk: {{ block.settings.color | color_darken: 14 }};" {{ block.shopify_attributes }}>
           <div class="bs-vis">
-            <span class="bs-slice bs-s1">${SLICE_SVG.replace(/\n/g, "")}</span>
-            <span class="bs-slice bs-s2">${SLICE_SVG.replace(/\n/g, "")}</span>
-            <span class="bs-bub" style="left:22%;top:22%;width:8px;height:8px" aria-hidden="true"></span>
-            <span class="bs-bub" style="right:20%;top:46%;width:6px;height:6px" aria-hidden="true"></span>
-            <span class="bs-bub" style="right:26%;bottom:30%;width:10px;height:10px;opacity:.75" aria-hidden="true"></span>
             {%- if block.settings.image != blank -%}
-              <span class="bs-shot bs-l1">{{ block.settings.image | image_url: width: 600 | image_tag: loading: 'lazy', alt: block.settings.name }}</span>
-              {%- assign bs_img2 = block.settings.image_2 | default: block.settings.image -%}
-              <span class="bs-shot bs-l2">{{ bs_img2 | image_url: width: 600 | image_tag: loading: 'lazy', alt: block.settings.name }}</span>
+              <span class="bs-photo">{{ block.settings.image | image_url: width: 800 | image_tag: loading: 'lazy', alt: block.settings.name, sizes: '(min-width: 990px) 31vw, 72vw' }}</span>
+              {%- if block.settings.image_2 != blank -%}
+                <span class="bs-photo bs-photo-2">{{ block.settings.image_2 | image_url: width: 800 | image_tag: loading: 'lazy', alt: '', sizes: '(min-width: 990px) 31vw, 72vw' }}</span>
+              {%- endif -%}
+              <span class="bs-fade" aria-hidden="true"></span>
+              {%- if section.settings.show_toggle and section.settings.line_2_label != blank -%}<span class="bs-line" aria-hidden="true">{{ section.settings.line_2_label }}</span>{%- endif -%}
             {%- else -%}
+              <span class="bs-slice bs-s1">${SLICE_SVG.replace(/\n/g, "")}</span>
+              <span class="bs-slice bs-s2">${SLICE_SVG.replace(/\n/g, "")}</span>
+              <span class="bs-bub" style="left:22%;top:24%;width:8px;height:8px" aria-hidden="true"></span>
+              <span class="bs-bub" style="right:20%;top:48%;width:6px;height:6px" aria-hidden="true"></span>
+              <span class="bs-bub" style="right:26%;bottom:30%;width:10px;height:10px;opacity:.75" aria-hidden="true"></span>
               <span class="bs-shot">${CAN_SVG.replace(/\n/g, "")}</span>
             {%- endif -%}
             {%- if block.settings.tag != blank -%}<span class="bs-tag">{{ block.settings.tag }}</span>{%- endif -%}
           </div>
+          <div class="bs-body">
           <h3 class="bs-name bs-disp">{{ block.settings.name }}</h3>
           {%- if block.settings.chip != blank -%}<span class="bs-chip bs-l1">{{ block.settings.chip }}</span>{%- endif -%}
           {%- assign bs_chip2 = block.settings.chip_2 | default: block.settings.chip -%}
@@ -574,12 +645,13 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
               ${form(1, "bs_p1")}
             </div>
           {%- endif -%}
+          </div>
         </article>
       {%- endfor -%}
     </div>
 
     {%- if section.blocks.size > 1 -%}
-      <div class="bs-dots">
+      <div class="bs-dots" data-dots>
         {%- for block in section.blocks -%}
           <button type="button" class="bs-dot{% if forloop.first %} is-on{% endif %}" data-to="{{ forloop.index0 }}" aria-label="Go to flavor {{ forloop.index }}"></button>
         {%- endfor -%}
@@ -596,11 +668,16 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
     var dots = root.querySelectorAll('.bs-dot');
     var prev = root.querySelector('[data-dir="-1"]');
     var next = root.querySelector('[data-dir="1"]');
+    var arrows = root.querySelector('[data-arrows]');
+    var dotsWrap = root.querySelector('[data-dots]');
     function step() { return cards[0] ? cards[0].getBoundingClientRect().width + ${GAP} : rail.clientWidth; }
     function sync() {
       var max = rail.scrollWidth - rail.clientWidth;
+      var idle = max <= 2;
       var end = rail.scrollLeft >= max - 2;
-      var i = end ? cards.length - 1 : Math.min(cards.length - 1, Math.round(rail.scrollLeft / step()));
+      var i = idle ? 0 : end ? cards.length - 1 : Math.min(cards.length - 1, Math.round(rail.scrollLeft / step()));
+      if (arrows) arrows.classList.toggle('is-idle', idle);
+      if (dotsWrap) dotsWrap.classList.toggle('is-idle', idle);
       dots.forEach(function (d, k) { d.classList.toggle('is-on', k === i); });
       if (prev) prev.disabled = rail.scrollLeft <= 2;
       if (next) next.disabled = end;
@@ -707,11 +784,11 @@ ${face ? face + "\n" : ""}  ${S} { container-type: inline-size; background: {{ s
           { type: "text", id: "tag", label: "Sticker (e.g. New)" },
           { type: "text", id: "chip", label: "Nutrition chip" },
           { type: "product", id: "product", label: "Product for the add button" },
-          { type: "image_picker", id: "image", label: "Can image (optional, replaces the drawn can)" },
+          { type: "image_picker", id: "image", label: "Photo (optional, replaces the drawn can)", info: "A 4:5 photo fills the top of the card. Match the card colour to its backdrop." },
           { type: "header", content: "Second product line" },
           { type: "text", id: "chip_2", label: "Nutrition chip" },
           { type: "product", id: "product_2", label: "Product (leave empty to use the first)" },
-          { type: "image_picker", id: "image_2", label: "Can image" },
+          { type: "image_picker", id: "image_2", label: "Photo (optional, leave empty to keep the first)" },
         ],
       },
     ],
@@ -753,15 +830,17 @@ export const flavorCarousel: Tweak = {
     { key: "line2", label: "Second line", type: "text", group: "Product line toggle" },
     {
       key: "flavors", label: "Flavors", type: "list", group: "Flavors",
-      hint: "Colour is a hex code. Chip 2 shows when the second line is selected",
+      hint: "Colour is a hex code; match it to the photo's backdrop. Leave Image URL empty to show a drawn can. Chip 2 and Image URL 2 show when the second line is selected",
       itemFields: [
         { key: "name", label: "Name", type: "text" },
+        { key: "image", label: "Image URL", type: "text" },
         { key: "color", label: "Card colour", type: "text" },
         { key: "chip", label: "Chip", type: "text" },
         { key: "chip2", label: "Chip (second line)", type: "text" },
+        { key: "image2", label: "Image URL (second line)", type: "text" },
         { key: "tag", label: "Sticker", type: "text" },
       ],
-      newItem: { name: "Berry Hibiscus", color: "#C77DDB", chip: "9g fiber · 4g sugar", chip2: "9g fiber · 1g sugar", tag: "" },
+      newItem: { name: "Berry Hibiscus", color: "#C77DDB", image: "", chip: "9g fiber · 4g sugar", chip2: "9g fiber · 1g sugar", image2: "", tag: "" },
       addLabel: "Add flavor", max: 10,
     },
     { key: "buttonLabel", label: "Button text", type: "text", group: "Quick add" },
