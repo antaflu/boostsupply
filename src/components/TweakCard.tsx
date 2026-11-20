@@ -33,6 +33,36 @@ const CARD_MODE: Record<string, CardMode> = {
   "value-chart": "panel",
   "set-builder": "panel",
   "quick-add-grid": "frame",
+  "plan-compare": "frame",
+  "dose-compare": "panel",
+  "subscribe-buy-box": "panel",
+  "ritual-steps": "frame",
+  "guarantee-band": "frame",
+  "bag-drawer": "panel",
+  "shade-card-grid": "frame",
+  "ugc-review-wall": "frame",
+  "impact-label": "frame",
+  "model-compare": "frame",
+  "carry-bundle": "panel",
+  "vs-leather": "panel",
+  "recipe-cards": "frame",
+  "set-tiers": "panel",
+  "clinical-stats": "frame",
+  "fit-finder": "panel",
+  "shade-buy-box": "frame",
+  "pdp-intimates": "frame",
+  "ingredient-explorer": "frame",
+  "refill-flow": "frame",
+  "size-predictor": "panel",
+  "pdp-apparel": "frame",
+  "complete-the-look": "frame",
+  "drop-waitlist": "frame",
+  "routine-builder": "frame",
+  "pack-builder": "panel",
+  "sugar-compare": "panel",
+  "flavor-quiz": "panel",
+  "feature-tabs": "frame",
+  "membership-pricing": "panel",
   // icon-feature-bar, logo-slider, sticky-add-to-cart → "frame"
 };
 
@@ -45,22 +75,15 @@ export function TweakCard({ tweak, index = 0 }: { tweak: Tweak; index?: number }
   const owned = tweak.tier === "free" || hasPurchased(tweak.slug);
 
   return (
-    <Link
-      href={href}
-      onClick={(e) => {
-        pushRecent(tweak.slug);
-        /* signed out: show the login wall right here, so closing it keeps
-           the visitor where they were in the grid */
-        if (hydrated && !user) {
-          e.preventDefault();
-          openAuth(undefined, href);
-        }
-      }}
-      className="bs-card-in group flex flex-col rounded-[30px] outline-none"
+    /* The card is a plain block with one stretched link on top. Previews
+       may contain their own links ("Shop all", "View style"), and an <a>
+       inside an <a> is invalid HTML that breaks hydration. */
+    <div
+      className="bs-card-in group relative flex flex-col rounded-[30px]"
       style={{ "--i": index } as React.CSSProperties}
     >
       {/* Preview block: lifts, darkens a touch, preview eases in */}
-      <div className="relative isolate h-[min(72svh,600px)] min-h-[440px] overflow-hidden rounded-[28px] bg-surface-2 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.025)] transition-[transform,translate,scale,background-color,box-shadow] duration-500 ease-[var(--ease)] group-hover:-translate-y-1 group-hover:bg-[#f0f0f0] group-hover:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.03),var(--shadow-hover)] group-focus-visible:shadow-[0_0_0_2px_var(--focus)] group-active:translate-y-0 group-active:scale-[0.995] sm:h-[560px] lg:h-[620px]">
+      <div className="relative isolate h-[min(72svh,600px)] min-h-[440px] overflow-hidden rounded-[28px] bg-surface-2 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.025)] transition-[transform,translate,scale,background-color,box-shadow] duration-500 ease-[var(--ease)] group-hover:-translate-y-1 group-hover:bg-[#f0f0f0] group-hover:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.03),var(--shadow-hover)] group-has-[a:focus-visible]:shadow-[0_0_0_2px_var(--focus)] group-active:translate-y-0 group-active:scale-[0.995] sm:h-[560px] lg:h-[620px]">
         <div className="absolute inset-0 flex items-center-safe justify-center overflow-hidden transition-transform duration-700 ease-[var(--ease)] group-hover:scale-[1.025]">
           <CardStage
             mode={cardModeFor(tweak.slug)}
@@ -128,7 +151,22 @@ export function TweakCard({ tweak, index = 0 }: { tweak: Tweak; index?: number }
           {tweak.tagline}
         </p>
       </div>
-    </Link>
+
+      <Link
+        href={href}
+        aria-label={`${tweak.name}: customize`}
+        onClick={(e) => {
+          pushRecent(tweak.slug);
+          /* signed out: show the login wall right here, so closing it keeps
+             the visitor where they were in the grid */
+          if (hydrated && !user) {
+            e.preventDefault();
+            openAuth(undefined, href);
+          }
+        }}
+        className="absolute inset-0 z-20 rounded-[30px] outline-none"
+      />
+    </div>
   );
 }
 
