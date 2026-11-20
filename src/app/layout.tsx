@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
+import { PaletteProvider } from "@/lib/palette";
 
 const saans = localFont({
   src: [
@@ -33,8 +34,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${saans.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-bg text-ink">
-        <AuthProvider>{children}</AuthProvider>
+      <body className="min-h-full bg-bg text-ink">
+        <AuthProvider>
+          <PaletteProvider>{children}</PaletteProvider>
+        </AuthProvider>
       </body>
     </html>
   );

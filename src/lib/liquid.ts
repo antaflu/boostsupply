@@ -28,6 +28,11 @@ type SchemaSetting =
       default?: number;
     }
   | { type: "checkbox"; id: string; label: string; default?: boolean }
+  | { type: "product_list"; id: string; label: string; limit?: number; info?: string }
+  | { type: "image_picker"; id: string; label: string; info?: string }
+  | { type: "product"; id: string; label: string; info?: string }
+  | { type: "collection"; id: string; label: string; info?: string }
+  | { type: "number"; id: string; label: string; default?: number; info?: string }
   | {
       type: "select";
       id: string;
@@ -44,7 +49,7 @@ interface BlockDef {
 
 interface PresetBlock {
   type: string;
-  settings: Record<string, string>;
+  settings: Record<string, string | number | boolean>;
 }
 
 export interface SchemaSpec {

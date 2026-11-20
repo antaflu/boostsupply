@@ -2,30 +2,40 @@
 
 /* ============================================================
    boost.supply design system
-   Monochrome (black / white / grey) + a single restrained accent.
-   Radii live on an 8px grid. Soft, modern, clean.
+   Same family as Chopper & Orcus: neutral greys, a grey chrome
+   page with the sidebar on it, content in a white rounded panel,
+   hairline rings instead of borders, one easing curve.
+   Tokens and motion values follow those two apps.
    ============================================================ */
 
 :root {
-  /* White page; soft grey blocks pop off it (Mobbin feature-grid style).
-     Color stays out of it — chrome leans on grey. */
+  /* Surfaces */
   --bg: #ffffff;
+  --chrome: #f8f8f8; /* page behind the panel, sidebar */
   --surface: #ffffff;
-  --surface-2: #f3f3f1;
-  --surface-3: #e8e8e4;
-  --border: #ececea;
-  --border-strong: #dcdcd7;
+  --surface-2: #f5f5f5; /* wash / grey blocks */
+  --surface-3: #eeeeee;
+  --border: #ebebeb; /* line */
+  --border-strong: #dedede; /* line-strong (hover) */
+  --hairline: #f0f0f0;
 
-  --ink: #1b1b19;
-  --ink-2: #56564f;
-  --ink-3: #8a8a82;
-  --ink-4: #aeaea6;
+  /* Text */
+  --ink: #171717;
+  --ink-2: #404040;
+  --ink-3: #737373;
+  --ink-4: #a3a3a3;
 
-  /* Single accent, used sparingly */
-  --accent: #1b1b19;
-  --accent-soft: #f3f3f1;
+  --accent: #171717;
+  --accent-soft: #f5f5f5;
+  --button: #262626;
+  --button-hover: #333333;
 
-  /* Radii on an 8px grid */
+  /* Interaction washes */
+  --hover: rgba(0, 0, 0, 0.035);
+  --select: rgba(0, 0, 0, 0.055);
+  --focus: rgba(23, 23, 23, 0.22);
+
+  /* Radii */
   --r-sm: 8px;
   --r-md: 12px;
   --r-lg: 16px;
@@ -33,30 +43,56 @@
   --r-2xl: 32px;
   --r-full: 999px;
 
-  /* Elevation */
-  --shadow-sm: 0 1px 2px rgba(19, 19, 19, 0.04), 0 1px 1px rgba(19, 19, 19, 0.03);
-  --shadow-md: 0 2px 8px rgba(19, 19, 19, 0.05), 0 1px 2px rgba(19, 19, 19, 0.04);
-  --shadow-lg: 0 12px 32px rgba(19, 19, 19, 0.08), 0 2px 8px rgba(19, 19, 19, 0.04);
-  /* Soft, diffuse lift for card hover — no hard edge */
-  --shadow-hover: 0 28px 50px -24px rgba(20, 20, 20, 0.18),
-    0 12px 24px -16px rgba(20, 20, 20, 0.1);
+  /* Elevation (ring first, then lift) */
+  --ring: 0 0 0 1px var(--border);
+  --ring-strong: 0 0 0 1px var(--border-strong);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 16px -4px rgba(0, 0, 0, 0.06),
+    0 18px 40px -12px rgba(0, 0, 0, 0.08);
+  --shadow-pop: var(--shadow-lg);
+  --shadow-modal: 0 2px 4px rgba(0, 0, 0, 0.03),
+    0 12px 32px -8px rgba(0, 0, 0, 0.08), 0 36px 72px -24px rgba(0, 0, 0, 0.12);
+  --shadow-hover: 0 1px 2px rgba(0, 0, 0, 0.03),
+    0 14px 30px -12px rgba(0, 0, 0, 0.12), 0 30px 60px -30px rgba(0, 0, 0, 0.14);
 
+  /* ---- Motion ----
+     ease:       everything (easeOutQuint) — arrivals, glides, hovers
+     ease-pop:   tiny overshoot for panels and chips appearing
+     ease-sheet: iOS-sheet feel for drawers
+     ease-in:    leaving, fast and clean */
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: var(--ease);
+  --ease-pop: cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-glide: 340ms;
+  --dur-slow: 420ms;
+
+  --sidebar-w: 248px;
+  --frame-gap: 8px;
 }
 
 @theme inline {
   --color-bg: var(--bg);
+  --color-chrome: var(--chrome);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-hairline: var(--hairline);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
   --color-ink-4: var(--ink-4);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-hover: var(--hover);
+  --color-select: var(--select);
 
   --radius-sm: var(--r-sm);
   --radius-md: var(--r-md);
@@ -65,7 +101,7 @@
   --radius-2xl: var(--r-2xl);
 
   --font-sans: var(--font-saans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, monospace;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 * {
@@ -108,20 +144,173 @@ body {
   background: var(--ink-4);
   background-clip: content-box;
 }
-
-/* Utility: hairline focus ring */
-.ring-ink:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
+.bs-no-scrollbar {
+  scrollbar-width: none;
+}
+.bs-no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-/* Range slider — monochrome, 8px-grid thumb */
+/* ---- Focus: one ring, keyboard only ---- */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}
+
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+button:not(:disabled),
+[role="button"] {
+  cursor: pointer;
+}
+
+/* ---- Press feedback ---- */
+.bs-press {
+  transition-property: transform, background-color, color, box-shadow, opacity;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: var(--ease);
+}
+.bs-press:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* ---- Buttons ----
+   sizes: sm 32/r10/13 · md 40/r12/14 · lg 48/r14/15 */
+.bs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transition: transform 160ms var(--ease), background-color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease, color var(--dur-fast) ease,
+    opacity var(--dur-fast) ease;
+}
+.bs-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.bs-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.bs-btn-sm {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.bs-btn-md {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+.bs-btn-lg {
+  height: 48px;
+  padding: 0 20px;
+  border-radius: 14px;
+  font-size: 15px;
+}
+.bs-btn-primary {
+  background: var(--button);
+  color: #fff;
+  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0.5px rgba(19, 20, 27, 0.1), 0 1px 2px rgba(19, 20, 27, 0.1);
+}
+.bs-btn-primary:hover:not(:disabled) {
+  background: var(--button-hover);
+}
+.bs-btn-secondary {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--border), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.bs-btn-secondary:hover:not(:disabled) {
+  background: #fafafa;
+  box-shadow: 0 0 0 1px var(--border-strong), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.bs-btn-ghost {
+  color: var(--ink-2);
+}
+.bs-btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+/* Chevron that slides in on hover (put .bs-reveal inside a .bs-btn) */
+.bs-reveal {
+  display: inline-flex;
+  max-width: 0;
+  margin-left: -8px;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-width 300ms var(--ease), opacity 300ms var(--ease),
+    margin 300ms var(--ease);
+}
+.bs-btn:hover .bs-reveal,
+.group:hover .bs-reveal {
+  max-width: 16px;
+  margin-left: 0;
+  opacity: 1;
+}
+
+/* ---- Inputs ---- */
+.bs-input {
+  background: var(--surface);
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  transition: box-shadow var(--dur-fast) ease, background-color var(--dur-fast) ease;
+}
+.bs-input:hover {
+  box-shadow: inset 0 0 0 1px #cfcfcf;
+}
+.bs-input:focus,
+.bs-input:focus-within {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--ink-3), 0 0 0 4px rgba(23, 23, 23, 0.06);
+}
+.bs-input::placeholder,
+.bs-input ::placeholder {
+  color: var(--ink-4);
+}
+
+/* ---- Keyboard hint chip ---- */
+.bs-kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  font: 500 11px/1 var(--font-sans);
+  color: var(--ink-3);
+}
+
+/* ---- Range slider ---- */
 .bs-range {
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
   border-radius: var(--r-full);
-  background: var(--surface-3);
+  background: linear-gradient(
+      to right,
+      var(--ink) 0 var(--fill, 0%),
+      var(--surface-3) var(--fill, 0%) 100%
+    );
   cursor: pointer;
 }
 .bs-range::-webkit-slider-thumb {
@@ -130,24 +319,27 @@ body {
   width: 16px;
   height: 16px;
   border-radius: var(--r-full);
-  background: var(--ink);
-  border: 3px solid var(--surface);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  transition: transform 0.15s var(--ease);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: transform 160ms var(--ease), box-shadow 160ms ease;
 }
-.bs-range::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
+.bs-range:hover::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+.bs-range:active::-webkit-slider-thumb {
+  transform: scale(0.94);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.16), 0 0 0 6px rgba(23, 23, 23, 0.06);
 }
 .bs-range::-moz-range-thumb {
   width: 16px;
   height: 16px;
+  border: 0;
   border-radius: var(--r-full);
-  background: var(--ink);
-  border: 3px solid var(--surface);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 
-/* Marquee keyframes (used by ticker / logo slider previews) */
+/* ---- Marquee keyframes (ticker / logo slider previews) ---- */
 @keyframes bs-marquee {
   from {
     transform: translateX(0);
@@ -156,7 +348,6 @@ body {
     transform: translateX(-50%);
   }
 }
-
 @keyframes bs-marquee-rev {
   from {
     transform: translateX(-50%);
@@ -166,7 +357,7 @@ body {
   }
 }
 
-/* Subtle entrance */
+/* ---- Entrances ---- */
 @keyframes bs-fade-up {
   from {
     opacity: 0;
@@ -174,9 +365,397 @@ body {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 .bs-fade-up {
-  animation: bs-fade-up 0.5s var(--ease) both;
+  animation: bs-fade-up var(--dur-slow) var(--ease) both;
+}
+/* Content that changes rises in; --i staggers a list */
+.bs-rise {
+  animation: bs-fade-up var(--dur-slow) var(--ease) both;
+  animation-delay: calc(min(var(--i, 0), 12) * 35ms);
+}
+@keyframes bs-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.bs-card-in {
+  animation: bs-card-in 600ms var(--ease) both;
+  animation-delay: calc(min(var(--i, 0), 12) * 45ms);
+}
+
+/* ---- Dialogs ---- */
+@keyframes bs-overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes bs-overlay-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes bs-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+@keyframes bs-panel-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+}
+.bs-overlay[data-state="open"] {
+  animation: bs-overlay-in 180ms ease both;
+}
+.bs-overlay[data-state="closed"] {
+  animation: bs-overlay-out 150ms ease both;
+}
+.bs-panel[data-state="open"] {
+  animation: bs-panel-in 260ms var(--ease) both;
+}
+.bs-panel[data-state="closed"] {
+  animation: bs-panel-out 150ms var(--ease-in) both;
+}
+
+/* ---- Search palette (Chopper ⌘K) ---- */
+@keyframes bs-cmdk-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+}
+@keyframes bs-cmdk-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.99);
+  }
+}
+.bs-cmdk[data-state="open"] {
+  animation: bs-cmdk-in 200ms var(--ease-pop) both;
+}
+.bs-cmdk[data-state="closed"] {
+  animation: bs-cmdk-out 140ms var(--ease-in) both;
+}
+.bs-cmdk-glass {
+  /* Chopper uses 92%; boost.supply has photo heroes behind the
+     palette, so a touch more opaque keeps text from ghosting */
+  background: color-mix(in srgb, #fff 97%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: 0 0 0 1px var(--border), 0 24px 60px -12px rgba(0, 0, 0, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.bs-match {
+  background: none;
+  color: var(--ink);
+  font-weight: 600;
+}
+@keyframes bs-chip-pop {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+.bs-chip-pop {
+  animation: bs-chip-pop 160ms var(--ease-pop) both;
+}
+
+/* ---- Popover menus ---- */
+@keyframes bs-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+}
+@keyframes bs-pop-in-down {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+}
+@keyframes bs-pop-out {
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+.bs-pop[data-state="open"] {
+  animation: bs-pop-in 220ms var(--ease) both;
+}
+.bs-pop-down[data-state="open"] {
+  animation: bs-pop-in-down 220ms var(--ease) both;
+}
+.bs-pop[data-state="closed"],
+.bs-pop-down[data-state="closed"] {
+  animation: bs-pop-out 120ms var(--ease-in) both;
+}
+
+/* ---- Step swap inside a dialog (sign-in → check inbox) ---- */
+@keyframes bs-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+    filter: blur(4px);
+  }
+}
+@keyframes bs-step-back {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+    filter: blur(4px);
+  }
+}
+.bs-step {
+  animation: bs-step-in 400ms var(--ease-sheet) both;
+}
+.bs-step-back {
+  animation: bs-step-back 400ms var(--ease-sheet) both;
+}
+
+/* Label swap (e.g. "Copy" → "Copied") */
+@keyframes bs-swap {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(25%);
+  }
+}
+.bs-swap {
+  animation: bs-swap 380ms var(--ease) both;
+}
+
+/* ---- Liquid glass (hero "Connect to Claude" box) ----
+   Stacked layers: a blurred, saturated backdrop (lensed by an SVG
+   displacement map where the engine supports it), a faint white tint
+   with a top-left sheen, and a specular rim of inset highlights. */
+.bs-liquid {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.55),
+    0 2px 10px -2px rgba(0, 0, 0, 0.2);
+}
+.bs-liquid-refract,
+.bs-liquid-tint,
+.bs-liquid-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.bs-liquid-refract {
+  z-index: 0;
+  -webkit-backdrop-filter: blur(6px) saturate(175%) brightness(1.08);
+  backdrop-filter: blur(6px) saturate(175%) brightness(1.08);
+}
+.bs-liquid[data-refract] .bs-liquid-refract {
+  filter: url(#bs-liquid-distort);
+}
+.bs-liquid-tint {
+  z-index: 1;
+  background: radial-gradient(
+      120% 90% at 8% -10%,
+      rgba(255, 255, 255, 0.26),
+      transparent 55%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+}
+.bs-liquid-rim {
+  z-index: 2;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 1px 0 0 rgba(255, 255, 255, 0.28),
+    inset -1px 0 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 12px 26px -16px rgba(255, 255, 255, 0.55),
+    inset 0 -16px 26px -20px rgba(255, 255, 255, 0.4);
+}
+.bs-liquid-body {
+  position: relative;
+  z-index: 3;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+.bs-liquid-body button {
+  text-shadow: none;
+}
+/* recessed wells inside the glass (copy field, tab track) */
+.bs-liquid-well,
+.bs-liquid-seg {
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .bs-liquid-refract,
+  .bs-liquid[data-refract] .bs-liquid-refract {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    filter: none;
+    background: rgba(28, 28, 30, 0.94);
+  }
+}
+
+/* ---- Login wall ---- */
+@keyframes bs-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.78) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(12deg);
+  }
+}
+.bs-twinkle {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: bs-twinkle 2.8s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+@keyframes bs-caret {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0;
+  }
+}
+.bs-caret {
+  animation: bs-caret 1s step-end infinite;
+}
+@keyframes bs-check-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+.bs-check-in {
+  animation: bs-check-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bs-twinkle,
+  .bs-caret,
+  .bs-check-in {
+    animation: none;
+  }
+}
+
+/* ---- Drawer (mobile sidebar) ---- */
+@keyframes bs-drawer-in {
+  from {
+    transform: translateX(-104%);
+  }
+}
+@keyframes bs-drawer-out {
+  to {
+    transform: translateX(-104%);
+  }
+}
+.bs-drawer[data-state="open"] {
+  animation: bs-drawer-in 380ms var(--ease-sheet) both;
+}
+.bs-drawer[data-state="closed"] {
+  animation: bs-drawer-out 240ms var(--ease-in) both;
+}
+
+/* ---- Misc ---- */
+@keyframes bs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.bs-spin {
+  animation: bs-spin 0.7s linear infinite;
+}
+@keyframes bs-draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.bs-draw {
+  stroke-dasharray: 24;
+  animation: bs-draw 420ms var(--ease) 120ms both;
+}
+@keyframes bs-pop-scale {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.bs-pop-scale {
+  animation: bs-pop-scale 420ms var(--ease) both;
+}
+
+/* Soft colour glow that rises from the bottom of the sign-in overlay */
+@keyframes bs-glow-drift {
+  0%,
+  100% {
+    transform: translate3d(-3%, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(3%, -4%, 0) scale(1.06);
+  }
+}
+.bs-glow {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -38vh;
+  height: 70vh;
+  pointer-events: none;
+  filter: blur(70px) saturate(1.2);
+  opacity: 0.55;
+  background: radial-gradient(40% 55% at 22% 60%, #ff7700 0%, transparent 70%),
+    radial-gradient(38% 60% at 52% 55%, #ff0055 0%, transparent 70%),
+    radial-gradient(40% 55% at 80% 60%, #0073ff 0%, transparent 70%);
+  animation: bs-glow-drift 9s ease-in-out infinite;
+}
+
+/* Respect reduced motion for app chrome. Section previews are left
+   alone: they show what the merchant is designing. */
+@media (prefers-reduced-motion: reduce) {
+  .bs-overlay,
+  .bs-panel,
+  .bs-cmdk,
+  .bs-pop,
+  .bs-pop-down,
+  .bs-step,
+  .bs-step-back,
+  .bs-swap,
+  .bs-drawer,
+  .bs-fade-up,
+  .bs-rise,
+  .bs-card-in,
+  .bs-glow,
+  .bs-chip-pop,
+  [data-glide-pill] {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
 }

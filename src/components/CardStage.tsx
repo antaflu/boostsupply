@@ -51,7 +51,7 @@ function FrameStage({ Preview, config }: StageProps) {
   }, []);
 
   return (
-    <div className="w-full px-6">
+    <div className="mx-auto w-full max-w-[920px] px-6 py-7">
       <div
         className="rounded-2xl overflow-hidden bg-surface"
         style={{ boxShadow: "var(--shadow-md)" }}
@@ -83,7 +83,8 @@ function ZoomStage({ Preview, config }: StageProps) {
   const [ref, { w }] = useSize<HTMLDivElement>();
   const designWidth = 900;
   const fit = w ? w / designWidth : 0.5;
-  const scale = fit * 1.72;
+  /* enlarge to bleed off the edges, but cap it on wide one-per-row cards */
+  const scale = Math.min(fit * 1.72, 1.55);
 
   return (
     <div ref={ref} className="absolute inset-0 flex items-center justify-center overflow-hidden">
@@ -106,8 +107,11 @@ function ZoomStage({ Preview, config }: StageProps) {
 
 function PanelStage({ Preview, config }: StageProps) {
   const [ref, { w }] = useSize<HTMLDivElement>();
-  const designWidth = 380;
-  const cardW = Math.max(0, w - 44);
+  /* wide cards render the section at a roomier design width and cap
+     the floating card, so it never balloons across a full-width row */
+  const wide = w > 760;
+  const designWidth = wide ? 560 : 380;
+  const cardW = Math.max(0, Math.min(w - 44, wide ? 760 : Infinity));
   const scale = cardW ? cardW / designWidth : 0;
 
   return (

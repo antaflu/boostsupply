@@ -1,290 +1,219 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import Image from "next/image";
-import { Nav } from "@/components/Nav";
+import Link from "next/link";
+import { AppShell } from "@/components/AppShell";
 import { TweakCard } from "@/components/TweakCard";
 import { TWEAKS } from "@/lib/registry";
 import { CATEGORIES } from "@/lib/categories";
-import type { CategoryId, Tier } from "@/lib/types";
-
-type CatFilter = CategoryId | "all";
-type TierFilter = Tier | "all";
+import { filterHref, useFilters, type CatFilter } from "@/lib/filters";
+import { useGlide } from "@/lib/useGlide";
+import { ClaudeConnect } from "@/components/ClaudeConnect";
 
 export default function Home() {
-  const [cat, setCat] = useState<CatFilter>("all");
-  const [tier, setTier] = useState<TierFilter>("all");
-  const [q, setQ] = useState("");
+  return (
+    <AppShell>
+      <Suspense fallback={null}>
+        <Directory />
+      </Suspense>
+    </AppShell>
+  );
+}
 
-  const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
-    return TWEAKS.filter((t) => {
-      if (cat !== "all" && t.category !== cat) return false;
-      if (tier !== "all" && t.tier !== tier) return false;
-      if (
-        query &&
-        !`${t.name} ${t.tagline} ${t.category}`.toLowerCase().includes(query)
-      )
-        return false;
-      return true;
-    });
-  }, [cat, tier, q]);
+function Directory() {
+  const { cat, tier } = useFilters();
 
-  const countFor = (id: CatFilter) =>
-    id === "all" ? TWEAKS.length : TWEAKS.filter((t) => t.category === id).length;
+  const filtered = useMemo(
+    () =>
+      TWEAKS.filter(
+        (t) =>
+          (cat === "all" || t.category === cat) &&
+          (tier === "all" || t.tier === tier),
+      ),
+    [cat, tier],
+  );
+
+  const title =
+    cat === "all"
+      ? "All sections"
+      : (CATEGORIES.find((c) => c.id === cat)?.label ?? "Sections");
+  const blurb = CATEGORIES.find((c) => c.id === cat)?.blurb;
 
   return (
-    <>
-      <Nav
-        right={
-          <div className="relative hidden md:block">
-            <SearchIcon />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search sections…"
-              className="h-9 w-56 lg:w-72 rounded-full border border-border bg-surface pl-9 pr-3 text-sm outline-none focus:border-ink transition-all"
-            />
-          </div>
-        }
-      />
+    <div className="mx-auto w-full max-w-[1180px] px-4 pb-24 pt-4 sm:px-8 sm:pt-8">
+      <Hero />
 
-      <main className="mx-auto max-w-[1400px] w-full px-5 pb-24">
-        <div className="flex gap-8 pt-7">
-          {/* Sidebar */}
-          <aside className="hidden lg:block w-[228px] shrink-0">
-            <div className="sticky top-[80px] space-y-7">
-              <Sidebar label="Categories">
-                <NavItem
-                  active={cat === "all"}
-                  onClick={() => setCat("all")}
-                  label="All sections"
-                  count={countFor("all")}
-                />
-                {CATEGORIES.map((c) => (
-                  <NavItem
-                    key={c.id}
-                    active={cat === c.id}
-                    onClick={() => setCat(c.id)}
-                    label={c.label}
-                    count={countFor(c.id)}
-                  />
-                ))}
-              </Sidebar>
+      {/* Mobile category chips (desktop uses the sidebar) */}
+      <MobileChips cat={cat} tier={tier} />
 
-              <Sidebar label="Pricing">
-                {(
-                  [
-                    ["all", "All"],
-                    ["free", "Free"],
-                    ["paid", "Premium"],
-                  ] as [TierFilter, string][]
-                ).map(([val, label]) => (
-                  <NavItem
-                    key={val}
-                    active={tier === val}
-                    onClick={() => setTier(val)}
-                    label={label}
-                    count={
-                      val === "all"
-                        ? TWEAKS.length
-                        : TWEAKS.filter((t) => t.tier === val).length
-                    }
-                  />
-                ))}
-              </Sidebar>
-
-              <div className="rounded-2xl bg-surface-2 p-4">
-                <p className="text-[13px] font-semibold mb-1">
-                  Built for CRO, designed to match.
-                </p>
-                <p className="text-[12px] text-ink-2 leading-relaxed">
-                  Every section is yours to restyle — fonts, colors, spacing,
-                  motion — then export clean Liquid.
-                </p>
-              </div>
-            </div>
-          </aside>
-
-          {/* Content */}
-          <div className="flex-1 min-w-0 space-y-6">
-            <Hero />
-
-            {/* Mobile filters */}
-            <div className="flex lg:hidden gap-2 overflow-x-auto pb-1 -mx-5 px-5">
-              <Chip active={cat === "all"} onClick={() => setCat("all")}>
-                All
-              </Chip>
-              {CATEGORIES.map((c) => (
-                <Chip
-                  key={c.id}
-                  active={cat === c.id}
-                  onClick={() => setCat(c.id)}
-                >
-                  {c.label}
-                </Chip>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between" id="grid">
-              <h2 className="text-sm font-medium text-ink-2">
-                {filtered.length} section{filtered.length === 1 ? "" : "s"}
-                {cat !== "all" && (
-                  <span className="text-ink-4">
-                    {" "}
-                    in {CATEGORIES.find((c) => c.id === cat)?.label}
-                  </span>
-                )}
-              </h2>
-            </div>
-
-            {filtered.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border-strong p-16 text-center text-ink-3">
-                Nothing matches that filter yet.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-10">
-                {filtered.map((t) => (
-                  <TweakCard key={t.slug} tweak={t} />
-                ))}
-              </div>
+      <div
+        id="grid"
+        className="mb-6 mt-8 flex scroll-mt-6 items-end justify-between gap-4 sm:mt-12"
+      >
+        <div>
+          <h2
+            key={title}
+            className="bs-fade-up text-[22px] font-semibold leading-7 tracking-[-0.02em]"
+          >
+            {title}
+          </h2>
+          <p className="mt-1 text-[13.5px] text-ink-3">
+            {filtered.length} section{filtered.length === 1 ? "" : "s"}
+            {tier !== "all" && (
+              <> · {tier === "free" ? "free" : "premium"} only</>
             )}
-          </div>
+            {blurb && <> · {blurb}</>}
+          </p>
         </div>
-      </main>
-    </>
+        {(cat !== "all" || tier !== "all") && (
+          <Link
+            href="/"
+            scroll={false}
+            className="bs-btn bs-btn-sm bs-btn-ghost shrink-0 text-ink-3"
+          >
+            Clear filters
+          </Link>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="bs-fade-up grid place-items-center rounded-[24px] bg-surface-2 px-6 py-20 text-center">
+          <p className="text-[15px] font-medium">Nothing here yet</p>
+          <p className="mt-1 text-[13.5px] text-ink-3">
+            No {tier === "free" ? "free" : "premium"} sections in this
+            category. More are on the way.
+          </p>
+          <Link
+            href={filterHref({ cat, tier: "all" })}
+            scroll={false}
+            className="bs-btn bs-btn-sm bs-btn-secondary mt-5"
+          >
+            Show all pricing
+          </Link>
+        </div>
+      ) : (
+        <div
+          key={`${cat}-${tier}`}
+          className="grid grid-cols-1 gap-y-12 sm:gap-y-14"
+        >
+          {filtered.map((t, i) => (
+            <TweakCard key={t.slug} tweak={t} index={i} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
 function Hero() {
+  const freeCount = TWEAKS.filter((t) => t.tier === "free").length;
+
   return (
-    <div className="relative overflow-hidden rounded-[28px] min-h-[400px] flex items-center justify-center">
-      {/* PNG backdrop, centered */}
+    <section className="bs-fade-up relative flex min-h-[380px] items-center justify-center overflow-hidden rounded-[24px] sm:min-h-[420px]">
       <Image
         src="/hero.png"
         alt=""
         fill
         priority
-        sizes="(max-width: 1024px) 100vw, 60vw"
+        sizes="(max-width: 1024px) 100vw, 1180px"
         className="object-cover object-center"
       />
-      {/* Soft center-weighted scrim — edges stay clear so the image shows */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/40 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-black/45 to-black/10" />
 
-      <div className="relative w-full px-8 md:px-12 py-12 mx-auto max-w-[720px] text-center">
-        <h1 className="text-[30px] md:text-[44px] font-normal tracking-tight leading-[1.12] text-white [text-shadow:0_2px_30px_rgba(0,0,0,0.4)]">
+      <div className="relative mx-auto w-full max-w-[720px] px-6 py-12 text-center md:px-12">
+        <h1 className="text-[30px] font-normal leading-[1.1] tracking-[-0.025em] text-white [text-shadow:0_2px_30px_rgba(0,0,0,0.35)] md:text-[46px]">
           Beautifully designed Shopify sections that convert
         </h1>
-        <p className="mt-4 mx-auto max-w-[560px] text-[15px] md:text-base text-white/85 leading-relaxed [text-shadow:0_1px_18px_rgba(0,0,0,0.35)]">
-          Get instant access to a growing library of premium, plug-and-play
-          Liquid code. Boost your store&rsquo;s conversion, AOV, and UX —
-          without paying a developer.
+        <p className="mx-auto mt-4 max-w-[540px] text-[15px] leading-relaxed text-white/85 [text-shadow:0_1px_18px_rgba(0,0,0,0.3)] md:text-base">
+          A growing library of plug-and-play Liquid sections. Restyle them to
+          your brand and lift conversion, AOV and UX without paying a
+          developer.
         </p>
-        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+        <ClaudeConnect className="mt-7" />
+
+        <div className="mt-5 flex flex-col items-center justify-center gap-x-2.5 gap-y-1.5 text-[13px] text-white/75 sm:flex-row sm:flex-wrap">
           <button
-            onClick={() => window.scrollBy({ top: 420, behavior: "smooth" })}
-            className="h-11 px-5 inline-flex items-center rounded-full bg-white text-ink text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-all"
+            type="button"
+            onClick={() =>
+              document
+                .getElementById("grid")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
+            className="group inline-flex h-7 items-center gap-1 rounded-full px-2.5 font-medium text-white transition-colors duration-[var(--dur-fast)] hover:bg-white/15"
           >
-            Browse sections
+            Or browse sections
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden
+              className="transition-transform duration-300 ease-[var(--ease)] group-hover:translate-y-0.5"
+            >
+              <path
+                d="M8 3v10M4 9l4 4 4-4"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
-          <div className="flex items-center gap-2 text-[13px] text-white/80">
-            <span className="font-semibold text-white">3 free</span> to try · no
-            account needed
-          </div>
+          <span aria-hidden className="hidden text-white/40 sm:inline">
+            ·
+          </span>
+          <span>
+            <span className="font-semibold text-white">
+              {freeCount === TWEAKS.length ? `All ${freeCount} sections free` : `${freeCount} free`}
+            </span>{" "}
+            with just your email
+          </span>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
-/* ---- bits ---- */
-
-function Sidebar({
-  label,
-  children,
+function MobileChips({
+  cat,
+  tier,
 }: {
-  label: string;
-  children: React.ReactNode;
+  cat: CatFilter;
+  tier: ReturnType<typeof useFilters>["tier"];
 }) {
+  const { container: gContainer, activeStyle: gActiveStyle } = useGlide<HTMLDivElement>(cat);
+  const chips: [CatFilter, string][] = [
+    ["all", "All"],
+    ...CATEGORIES.map((c) => [c.id, c.label] as [CatFilter, string]),
+  ];
   return (
-    <div>
-      <p className="px-2 mb-2 text-[11px] font-semibold uppercase tracking-wider text-ink-4">
-        {label}
-      </p>
-      <div className="space-y-0.5">{children}</div>
-    </div>
-  );
-}
-
-function NavItem({
-  active,
-  onClick,
-  label,
-  count,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  count: number;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center justify-between px-2.5 h-9 rounded-lg text-sm transition-colors ${
-        active
-          ? "bg-ink text-surface font-medium"
-          : "text-ink-2 hover:bg-surface-2"
-      }`}
-    >
-      <span>{label}</span>
-      <span
-        className={`text-xs tabular-nums ${active ? "text-surface/60" : "text-ink-4"}`}
+    <div className="bs-no-scrollbar -mx-4 mt-5 overflow-x-auto px-4 lg:hidden">
+      <div
+        ref={gContainer}
+        className="relative inline-flex gap-1 rounded-full bg-surface-2 p-1"
       >
-        {count}
-      </span>
-    </button>
-  );
-}
-
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`shrink-0 h-9 px-3.5 rounded-full text-sm font-medium border transition-colors ${
-        active
-          ? "bg-ink text-surface border-ink"
-          : "bg-surface text-ink-2 border-border"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg
-      className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-4"
-      width="15"
-      height="15"
-      viewBox="0 0 16 16"
-      fill="none"
-    >
-      <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M10.5 10.5L14 14"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
+        <span
+          data-glide-pill
+          aria-hidden
+          className="pointer-events-none absolute rounded-full bg-ink"
+          style={gActiveStyle}
+        />
+        {chips.map(([id, label]) => (
+          <Link
+            key={id}
+            href={filterHref({ cat: id, tier })}
+            scroll={false}
+            data-glide={id}
+            aria-current={cat === id ? "page" : undefined}
+            className={`relative h-8 shrink-0 rounded-full px-3.5 text-[13px] font-medium leading-8 transition-colors duration-200 ${
+              cat === id ? "text-white" : "text-ink-2 active:text-ink"
+            }`}
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }

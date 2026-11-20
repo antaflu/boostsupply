@@ -100,13 +100,17 @@ ${face ? face + "\n" : ""}  .bs-ship-{{ section.id }} { background: {{ section.s
 {%- assign bs_pct = cart.total_price | times: 100.0 | divided_by: bs_threshold -%}
 {%- if bs_pct > 100 -%}{%- assign bs_pct = 100 -%}{%- endif -%}
 {%- assign bs_rem_money = bs_remaining | money_without_trailing_zeros -%}
+{%- comment -%} Build the remaining-amount token here: curly pairs inside an output tag would break the Liquid parser {%- endcomment -%}
+{%- assign bs_open = '{' | append: '{' -%}
+{%- assign bs_close = '}' | append: '}' -%}
+{%- assign bs_token = bs_open | append: 'remaining' | append: bs_close -%}
 <div class="bs-ship-{{ section.id }}">
   <div class="bs-in">
     <p class="bs-msg">
       {%- if bs_remaining <= 0 -%}
         {% if section.settings.show_gift %}✅ {% endif %}{{ section.settings.after_text }}
       {%- else -%}
-        {% if section.settings.show_gift %}🚚 {% endif %}{{ section.settings.before_text | replace: '{{remaining}}', bs_rem_money }}
+        {% if section.settings.show_gift %}🚚 {% endif %}{{ section.settings.before_text | replace: bs_token, bs_rem_money }}
       {%- endif -%}
     </p>
     <div class="bs-track"><div class="bs-fill" style="width: {{ bs_pct }}%;"></div></div>
@@ -127,7 +131,8 @@ ${face ? face + "\n" : ""}  .bs-ship-{{ section.id }} { background: {{ section.s
       { type: "color", id: "text_color", label: "Text", default: str(config, "textColor") },
       { type: "range", id: "font_size", label: "Font size", min: 11, max: 18, step: 1, unit: "px", default: num(config, "fontSize") },
       { type: "range", id: "bar_height", label: "Bar height", min: 4, max: 20, step: 1, unit: "px", default: num(config, "barHeight") },
-      { type: "range", id: "radius", label: "Corner radius", min: 0, max: 999, step: 1, unit: "px", default: num(config, "radius") },
+      /* Shopify allows at most 101 steps; 100px already reads as a full pill on this bar */
+      { type: "range", id: "radius", label: "Corner radius", min: 0, max: 100, step: 1, unit: "px", default: Math.min(100, Math.round(num(config, "radius"))) },
       { type: "range", id: "padding_y", label: "Vertical padding", min: 6, max: 32, step: 2, unit: "px", default: num(config, "paddingY") },
     ],
   });

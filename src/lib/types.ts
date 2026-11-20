@@ -136,6 +136,8 @@ export interface Tweak {
   tier: Tier;
   /** USD, one-time. undefined for free */
   price?: number;
+  /** id of the DTC brand this section is modeled on (logo in /public/brands) */
+  inspiredBy?: string;
   /** soft tint behind the card preview, e.g. "#eef1ff" */
   tint: string;
   fields: Field[];
